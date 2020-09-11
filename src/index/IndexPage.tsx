@@ -11,8 +11,9 @@ import { getKeyCloakActions } from '../keycloak';
 export default function IndexPage() {
   // const { t } = useTranslation();
   // const [authenticate] = useAuthenticate();
+  console.log('RENDER!');
   const keyCloak = getKeyCloakActions({});
-  const { login, logout, loadUser } = keyCloak;
+  const { login, logout, loadUser, isAuthenticated } = keyCloak;
   const onClickLogin = () => {
     login();
   };
@@ -33,15 +34,20 @@ export default function IndexPage() {
     }
   }, [initialized, keyCloak]);
 
+  const authenticated = initialized && isAuthenticated();
   return !initialized ? (
     <div>Initializing...</div>
   ) : (
     <>
-      <button onClick={onClickLogin}>Login to keycloak</button>
+      {!authenticated && (
+        <button onClick={onClickLogin}>Login to keycloak</button>
+      )}
       <br />
-      <button onClick={onClickLogout}>Logout from keycloak</button>
+      {authenticated && (
+        <button onClick={onClickLogout}>Logout from keycloak</button>
+      )}
       <br />
-      <button onClick={onClickLoadUser}>LoadUser</button>
+      {authenticated && <button onClick={onClickLoadUser}>LoadUser</button>}
     </>
   );
   /*return (

@@ -3,7 +3,7 @@ import { useLocation } from 'react-router-dom';
 import { Switch, Route } from 'react-router';
 import { ApolloProvider } from '@apollo/react-hooks';
 import { Provider as ReduxProvider } from 'react-redux';
-import { OidcProvider, loadUser } from 'redux-oidc';
+import { OidcProvider, loadUser, CallbackComponent } from 'redux-oidc';
 import { MatomoProvider, createInstance } from '@datapunt/matomo-tracker-react';
 import countries from 'i18n-iso-countries';
 import fi from 'i18n-iso-countries/langs/fi.json';
@@ -28,6 +28,8 @@ import authConstants from './auth/constants/authConstants';
 import GdprAuthorizationCodeManagerCallback from './gdprApi/GdprAuthorizationCodeManagerCallback';
 import ToastProvider from './toast/ToastProvider';
 import IndexPage from './index/IndexPage';
+import OIDCReactAuth from './oidc-react/OIDC-react';
+import ReduxOIDCAuth from './redux-oidc/ReduxOIDC';
 
 countries.registerLocale(fi);
 countries.registerLocale(en);
@@ -65,7 +67,7 @@ function App(props: Props) {
   if (location.pathname === '/loginsso') {
     authenticate();
   }
-
+  console.log('app!');
   window.addEventListener('storage', event => {
     if (
       event.key === authConstants.OIDC_KEY &&
@@ -82,6 +84,7 @@ function App(props: Props) {
       authenticate();
   });
 
+  const RComponent = () => <div>{Math.random()}</div>;
   /*
   <Route path="/callback">
                 <OidcCallback />
@@ -93,8 +96,21 @@ function App(props: Props) {
         <MatomoProvider value={instance}>
           <AppMeta />
           <Switch>
-            <Route path={['/']} exact>
+            <Route path={['/keycloak']} exact>
+              <RComponent />
               <IndexPage />
+            </Route>
+            <Route path={['/oidc']} exact>
+              <RComponent />
+              <OIDCReactAuth />
+            </Route>
+            <Route path={['/']} exact>
+              <RComponent />
+              <ReduxOIDCAuth />
+            </Route>
+            <Route path={['/callback']} exact>
+              <div>CallBack</div>
+              <OidcCallback />
             </Route>
             <Route path="*">404 - not found</Route>
           </Switch>
@@ -103,5 +119,4 @@ function App(props: Props) {
     </ReduxProvider>
   );
 }
-
 export default App;

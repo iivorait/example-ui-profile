@@ -11,11 +11,13 @@ type Props = {};
 function OidcCallback(props: Props) {
   const history = useHistory();
   const onSuccess = (user: object) => {
+    console.log('onSuccess');
     history.push('/');
   };
   const onError = (error: object) => {
     Sentry.captureException(error);
-    history.push('/');
+    //history.push('/');
+    console.log('errrorrrr', error);
   };
   const { t } = useTranslation();
   return (

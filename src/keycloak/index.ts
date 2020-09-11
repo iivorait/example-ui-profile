@@ -72,8 +72,10 @@ export function getKeyCloakActions(
       if (status !== 'none') {
         throw new Error('Cannot re-initialize keycloak');
       }
+      console.log('init');
       const promise = keycloak.init({
         onLoad: 'check-sso',
+        flow: 'hybrid',
         token: savedTokens.token,
       });
       status = 'initialized';

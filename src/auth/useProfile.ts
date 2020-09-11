@@ -52,7 +52,7 @@ function useProfile(): ProfileState {
             return;
           }
 
-          setProfile(user.profile);
+          // setProfile(user.profile);
         })
         .catch(() => {
           if (ignore) {

@@ -24,6 +24,7 @@ const settings: UserManagerSettings = {
 };
 /* eslint-enable @typescript-eslint/camelcase */
 
+console.log('user manager 1');
 const userManager = createUserManager(settings);
 
 userManager.events.addUserLoaded(async () => {
