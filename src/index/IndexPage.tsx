@@ -1,17 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { useTranslation } from 'react-i18next';
-import { Button } from 'hds-react';
+// import { useTranslation } from 'react-i18next';
+// import { Button } from 'hds-react';
 
-import HelsinkiLogo from '../common/helsinkiLogo/HelsinkiLogo';
-import PageLayout from '../common/pageLayout/PageLayout';
-import styles from './IndexPage.module.css';
-import useAuthenticate from '../auth/useAuthenticate';
+// import HelsinkiLogo from '../common/helsinkiLogo/HelsinkiLogo';
+// import PageLayout from '../common/pageLayout/PageLayout';
+// import styles from './IndexPage.module.css';
+// import useAuthenticate from '../auth/useAuthenticate';
 import { getKeyCloakActions } from '../keycloak';
 
 export default function IndexPage() {
   // const { t } = useTranslation();
   // const [authenticate] = useAuthenticate();
-  console.log('RENDER!');
   const keyCloak = getKeyCloakActions({});
   const { login, logout, loadUser, isAuthenticated } = keyCloak;
   const onClickLogin = () => {

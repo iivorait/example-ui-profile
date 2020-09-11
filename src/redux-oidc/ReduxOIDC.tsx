@@ -1,14 +1,14 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect } from 'react';
 import { Provider as ReduxProvider } from 'react-redux';
-import { OidcProvider, loadUser } from 'redux-oidc';
-import Oidc, {
+import { loadUser } from 'redux-oidc';
+import {
   UserManager,
   UserManagerSettings,
   WebStorageStateStore,
 } from 'oidc-client';
 
 import store from '../redux/store';
-import { fetchApiTokenThunk } from '../auth/redux';
+// import { fetchApiTokenThunk } from '../auth/redux';
 
 const location = window.location.origin;
 
@@ -30,15 +30,14 @@ export default function ReduxOIDCAuth() {
   /* eslint-enable @typescript-eslint/camelcase */
   useEffect(() => {
     const userManager = new UserManager(settings);
-    console.log('GO');
     loadUser(store, userManager).then(async user => {
-      console.log('user', user);
+      console.log('loaded user:', user);
       if (user && !user.expired) {
         // store.dispatch(fetchApiTokenThunk(user.access_token));
-        console.log('all is good');
+        console.log('user is ok');
       } else {
         userManager.signinRedirect().catch(error => {
-          console.log('signingerror');
+          console.log('signingerror', error);
         });
       }
     });

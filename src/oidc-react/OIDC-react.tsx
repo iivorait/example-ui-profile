@@ -1,5 +1,4 @@
-import React, { useState, useEffect } from 'react';
-import { Button } from 'hds-react';
+import React, { useEffect } from 'react';
 import Oidc, {
   UserManager,
   UserManagerSettings,
@@ -28,15 +27,16 @@ export default function OIDCReactAuth() {
     const manager = new UserManager(settings);
     Oidc.Log.logger = console;
     Oidc.Log.level = 4;
-    console.log('user manager 2', manager.settings);
     manager.events.addSilentRenewError(function(e) {
       console.log('silentRenewError', e);
     });
+    /*
     window.addEventListener(
       'message',
       event => console.log('message', event.data),
       false
     );
+    */
     setTimeout(() => {
       manager
         .signinSilent()
