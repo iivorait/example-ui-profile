@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useContext } from 'react';
 // import { useLocation } from 'react-router-dom';
 import { Switch, Route } from 'react-router';
 // import { ApolloProvider } from '@apollo/react-hooks';
@@ -18,8 +18,9 @@ import AppMeta from './AppMeta';
 // import authConstants from './auth/constants/authConstants';
 import ToastProvider from './toast/ToastProvider';
 import IndexPage from './index/IndexPage';
-import OIDCReactAuth from './oidc-react/OIDC-react';
+import OIDCReactAuth from './oidc-react/Oidc-react';
 import ReduxOIDCAuth from './redux-oidc/ReduxOIDC';
+import { KeycloakProvider, KeycloakContext } from './clients/KeycloakProvider';
 
 countries.registerLocale(fi);
 countries.registerLocale(en);
@@ -66,6 +67,15 @@ function App(props: Props) {
   */
 
   const RComponent = () => <div>{Math.random()}</div>;
+  const KeyCloakConsumer = () => {
+    const keycloak = useContext(KeycloakContext);
+    return (
+      <>
+        <RComponent />
+        <div>KeyCloakConsumer {keycloak && keycloak.status}</div>
+      </>
+    );
+  };
 
   return (
     <ReduxProvider store={store}>
@@ -73,11 +83,16 @@ function App(props: Props) {
         <MatomoProvider value={instance}>
           <AppMeta />
           <Switch>
-            <Route path={['/']} exact>
+            <Route path={['/kc']} exact>
               <RComponent />
               <IndexPage />
             </Route>
-            <Route path={['/oidc']} exact>
+            <Route path={['/kcc']} exact>
+              <KeycloakProvider>
+                <KeyCloakConsumer />
+              </KeycloakProvider>
+            </Route>
+            <Route path={['/']} exact>
               <RComponent />
               <OIDCReactAuth />
             </Route>
@@ -87,7 +102,8 @@ function App(props: Props) {
             </Route>
             <Route path={['/callback']} exact>
               <div>CallBack</div>
-              <OidcCallback />
+              <OIDCReactAuth verifyCallback />
+              {window.location.href === 'aaa' && <OidcCallback />}
             </Route>
             <Route path="*">404 - not found</Route>
           </Switch>
