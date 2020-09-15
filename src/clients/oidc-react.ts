@@ -1,3 +1,4 @@
+import { useEffect, useState, useRef } from 'react';
 import Oidc, {
   UserManager,
   UserManagerSettings,
@@ -38,16 +39,18 @@ export function getClient(settings: Partial<UserManagerSettings>): Client {
   };
   const manager = new UserManager(mergedSettings);
   let status: ClientStatus = 'none';
-
+  let initPromise: Promise<User> | undefined = undefined;
+  let user: User | undefined = undefined;
   client = {
     init: () => {
-      if (status !== 'none') {
-        throw new Error('Cannot re-initialize Oidc');
+      if (initPromise) {
+        return initPromise;
       }
-      const promise = manager.signinSilent();
+      status = 'initializing';
+      initPromise = manager.signinSilent();
 
       status = 'initialized';
-      promise
+      initPromise
         .then(function(authenticated) {
           console.log(
             authenticated ? 'authenticated' : 'not authenticated',
@@ -59,7 +62,7 @@ export function getClient(settings: Partial<UserManagerSettings>): Client {
           console.log('failed to initialize');
           status = 'authentication-error';
         });
-      return promise;
+      return initPromise;
     },
     login: () => {
       manager.signinRedirect();
@@ -76,15 +79,22 @@ export function getClient(settings: Partial<UserManagerSettings>): Client {
     clearSession: () => {
       return;
     },
-    loadUser: () => {
-      return manager.getUser();
-      /*
-              .then(function(profile) {
-                console.log(JSON.stringify(profile, null, '  '));
-              })
-              .catch(function() {
-                console.log('Failed to load user profile');
-              });*/
+    loadUserProfile: () => {
+      return new Promise((resolve, reject) => {
+        manager
+          .getUser()
+          .then(data => {
+            user = data || undefined;
+            resolve(user);
+          })
+          .catch(e => {
+            user = undefined;
+            reject(e);
+          });
+      });
+    },
+    getUserProfile: () => {
+      return user;
     },
     handleCallback: () => {
       return new Promise((resolve, reject) => {
@@ -104,3 +114,25 @@ export function getClient(settings: Partial<UserManagerSettings>): Client {
   };
   return client;
 }
+
+export const useOidc = (): Client => {
+  const clientRef: React.Ref<Client> = useRef(getClient({}));
+  const client: Client = clientRef.current as Client;
+  const [, setStatus] = useState<ClientStatus>(client.getStatus());
+  useEffect(() => {
+    const initClient = async (): Promise<void> => {
+      if (!client.isInitialized()) {
+        await client.init();
+      }
+      console.log('inititiated');
+      if (client.isAuthenticated()) {
+        await client.loadUserProfile();
+        console.log('user loaded');
+      }
+      setStatus(client.getStatus());
+      return;
+    };
+    initClient();
+  }, [client]);
+  return client;
+};

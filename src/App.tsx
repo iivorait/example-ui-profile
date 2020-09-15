@@ -18,9 +18,12 @@ import AppMeta from './AppMeta';
 // import authConstants from './auth/constants/authConstants';
 import ToastProvider from './toast/ToastProvider';
 import IndexPage from './index/IndexPage';
+import Index from './pages/Index';
 import OIDCReactAuth from './oidc-react/Oidc-react';
 import ReduxOIDCAuth from './redux-oidc/ReduxOIDC';
 import { KeycloakProvider, KeycloakContext } from './clients/KeycloakProvider';
+import Header from './components/Header';
+import PageContainer from './components/PageContainer';
 
 countries.registerLocale(fi);
 countries.registerLocale(en);
@@ -72,44 +75,54 @@ function App(props: Props) {
     return (
       <>
         <RComponent />
-        <div>KeyCloakConsumer {keycloak && keycloak.status}</div>
+        <div>
+          KeyCloakConsumer {keycloak && keycloak.userManager.getStatus()}
+        </div>
       </>
     );
   };
 
   return (
-    <ReduxProvider store={store}>
-      <ToastProvider>
-        <MatomoProvider value={instance}>
-          <AppMeta />
-          <Switch>
-            <Route path={['/kc']} exact>
-              <RComponent />
-              <IndexPage />
-            </Route>
-            <Route path={['/kcc']} exact>
-              <KeycloakProvider>
-                <KeyCloakConsumer />
-              </KeycloakProvider>
-            </Route>
-            <Route path={['/']} exact>
-              <RComponent />
-              <OIDCReactAuth />
-            </Route>
-            <Route path={['/redux']} exact>
-              <RComponent />
-              <ReduxOIDCAuth />
-            </Route>
-            <Route path={['/callback']} exact>
-              <div>CallBack</div>
-              <OIDCReactAuth verifyCallback />
-              {window.location.href === 'aaa' && <OidcCallback />}
-            </Route>
-            <Route path="*">404 - not found</Route>
-          </Switch>
-        </MatomoProvider>
-      </ToastProvider>
-    </ReduxProvider>
+    <KeycloakProvider>
+      <ReduxProvider store={store}>
+        <ToastProvider>
+          <MatomoProvider value={instance}>
+            <AppMeta />
+            <PageContainer>
+              <Header />
+              <Switch>
+                <Route path={['/']} exact>
+                  <Index />
+                </Route>
+                <Route path={['/kc']} exact>
+                  <RComponent />
+                  <IndexPage />
+                </Route>
+                <Route path={['/kcc']} exact>
+                  <KeycloakProvider>
+                    <KeyCloakConsumer />
+                  </KeycloakProvider>
+                </Route>
+                <Route path={['/oidc']} exact>
+                  <RComponent />
+                  <OIDCReactAuth />
+                </Route>
+                <Route path={['/redux']} exact>
+                  <RComponent />
+                  <ReduxOIDCAuth />
+                </Route>
+                <Route path={['/callback']} exact>
+                  <div>CallBack</div>
+                  <OIDCReactAuth verifyCallback />
+                  {window.location.href === 'aaa' && <OidcCallback />}
+                </Route>
+                <Route path="*">404 - not found</Route>
+              </Switch>
+            </PageContainer>
+          </MatomoProvider>
+        </ToastProvider>
+      </ReduxProvider>
+    </KeycloakProvider>
   );
 }
 export default App;

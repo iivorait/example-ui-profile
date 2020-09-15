@@ -1,3 +1,4 @@
+export type User = Record<string, any>;
 export type Client = {
   init: () => Promise<any>;
   login: () => void;
@@ -6,12 +7,14 @@ export type Client = {
   isInitialized: () => boolean;
   clearSession: () => void;
   handleCallback: () => Promise<any>;
-  loadUser: () => Promise<any>;
+  loadUserProfile: () => Promise<User>;
   getStatus: () => ClientStatus;
+  getUserProfile: () => User | undefined;
 };
 
 export type ClientStatus =
   | 'none'
+  | 'initializing'
   | 'initialized'
   | 'authenticated'
   | 'unauthorized'

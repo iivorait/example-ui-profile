@@ -5,7 +5,7 @@ import { getClient } from '../clients/oidc-react';
 export default function OIDCReactAuth(props?: { verifyCallback?: boolean }) {
   const verify = !!(props && props.verifyCallback);
   const [client] = useState(getClient({}));
-  const { login, logout, loadUser, isAuthenticated } = client;
+  const { login, logout, loadUserProfile, isAuthenticated } = client;
   const [initialized, setInitialized] = useState(client.isInitialized());
   const onClickLogin = () => {
     login();
@@ -14,7 +14,7 @@ export default function OIDCReactAuth(props?: { verifyCallback?: boolean }) {
     logout();
   };
   const onClickLoadUser = () => {
-    loadUser().then(profile =>
+    loadUserProfile().then(profile =>
       console.log(JSON.stringify(profile, null, '  '))
     );
   };

@@ -29,6 +29,7 @@ function Home(props: Props) {
           <h1>{t('login.title')}</h1>
           <h2>{t('login.description')}</h2>
           <Button
+            translate=""
             variant="secondary"
             className={styles.button}
             onClick={() => {

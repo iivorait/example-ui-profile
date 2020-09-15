@@ -6,13 +6,13 @@ import React, { useState, useEffect } from 'react';
 // import PageLayout from '../common/pageLayout/PageLayout';
 // import styles from './IndexPage.module.css';
 // import useAuthenticate from '../auth/useAuthenticate';
-import { createClient } from '../clients/keycloak';
+import { getClient } from '../clients/keycloak';
 
 export default function IndexPage() {
   // const { t } = useTranslation();
   // const [authenticate] = useAuthenticate();
-  const keyCloak = createClient({});
-  const { login, logout, loadUser, isAuthenticated } = keyCloak;
+  const keyCloak = getClient({});
+  const { login, logout, loadUserProfile, isAuthenticated } = keyCloak;
   const onClickLogin = () => {
     login();
   };
@@ -20,7 +20,7 @@ export default function IndexPage() {
     logout();
   };
   const onClickLoadUser = () => {
-    loadUser().then(profile =>
+    loadUserProfile().then(profile =>
       console.log(JSON.stringify(profile, null, '  '))
     );
   };

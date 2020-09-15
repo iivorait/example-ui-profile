@@ -1,6 +1,7 @@
+import { useEffect, useState, useRef } from 'react';
 import Keycloak from 'keycloak-js';
 
-import { Client, ClientStatus } from './index';
+import { Client, ClientStatus, User } from './index';
 export interface KeycloakProviderSignOutProps {
   /**
    * Trigger a redirect of the current window to the end session endpoint
@@ -20,20 +21,7 @@ export interface KeycloakProviderSignOutProps {
   signoutRedirect?: boolean | unknown;
 }
 export interface KeycloakContextProps {
-  /**
-   * Alias for userManager.signInRedirect
-   */
-  signIn: (args?: unknown) => Promise<void>;
-  /**
-   * Alias for removeUser
-   */
-  signOut: () => Promise<void>;
-  /**
-   *
-   */
-  signOutRedirect: (args?: unknown) => Promise<void>;
-  userData?: any | null;
-  status?: ClientStatus;
+  readonly userManager: Client;
 }
 
 export interface KeycloakProviderProps {
@@ -45,10 +33,6 @@ export interface KeycloakProviderProps {
    * realm to true
    */
   url?: string;
-  /**
-   * See [UserManager](https://github.com/IdentityModel/oidc-client-js/wiki#usermanager) for more details.
-   */
-  client?: Client;
   /**
    * The URL of the OIDC/OAuth2 provider.
    */
@@ -130,7 +114,7 @@ function getSessionStorageTokens(): {
 
 let client: Client | null = null;
 
-export function createClient(config: Partial<Keycloak.KeycloakConfig>): Client {
+export function getClient(config: Partial<Keycloak.KeycloakConfig>): Client {
   if (client) {
     return client;
   }
@@ -141,19 +125,24 @@ export function createClient(config: Partial<Keycloak.KeycloakConfig>): Client {
   const keycloak: Keycloak.KeycloakInstance = Keycloak(mergedConfig);
   const savedTokens = getSessionStorageTokens();
   let status: ClientStatus = 'none';
-
+  let initPromise:
+    | Keycloak.KeycloakPromise<boolean, Keycloak.KeycloakError>
+    | undefined = undefined;
+  let user: User | undefined = undefined;
   client = {
     init: () => {
-      if (status !== 'none') {
-        throw new Error('Cannot re-initialize keycloak');
+      if (initPromise) {
+        return initPromise;
       }
-      const promise = keycloak.init({
+      status = 'initializing';
+      initPromise = keycloak.init({
         onLoad: 'check-sso',
         flow: 'hybrid',
         token: savedTokens.token,
+        enableLogging: true,
       });
       status = 'initialized';
-      promise
+      initPromise
         .then(function(authenticated) {
           console.log(
             authenticated ? 'authenticated' : 'not authenticated',
@@ -171,7 +160,7 @@ export function createClient(config: Partial<Keycloak.KeycloakConfig>): Client {
           console.log('failed to initialize');
           status = 'authentication-error';
         });
-      return promise;
+      return initPromise;
     },
     login: () => {
       keycloak.login({
@@ -192,13 +181,28 @@ export function createClient(config: Partial<Keycloak.KeycloakConfig>): Client {
       status === 'logging-out' ||
       status === 'unauthorized',
     clearSession: () => {
+      user = undefined;
       return;
     },
     handleCallback: () => {
       return Promise.reject('not supported with keycloak');
     },
-    loadUser: () => {
-      return keycloak.loadUserProfile();
+    loadUserProfile: () => {
+      return new Promise((resolve, reject) => {
+        keycloak
+          .loadUserProfile()
+          .then(data => {
+            user = data;
+            resolve(data);
+          })
+          .catch(e => {
+            user = undefined;
+            reject(e);
+          });
+      });
+    },
+    getUserProfile: () => {
+      return user;
     },
     getStatus: () => {
       return status;
@@ -206,3 +210,25 @@ export function createClient(config: Partial<Keycloak.KeycloakConfig>): Client {
   };
   return client;
 }
+
+export const useKeycloak = (): Client => {
+  const clientRef: React.Ref<Client> = useRef(getClient({}));
+  const client: Client = clientRef.current as Client;
+  const [, setStatus] = useState<ClientStatus>(client.getStatus());
+  useEffect(() => {
+    const initClient = async (): Promise<void> => {
+      if (!client.isInitialized()) {
+        await client.init();
+      }
+      console.log('inititiated');
+      if (client.isAuthenticated()) {
+        await client.loadUserProfile();
+        console.log('user loaded');
+      }
+      setStatus(client.getStatus());
+      return;
+    };
+    initClient();
+  }, [client]);
+  return client;
+};
