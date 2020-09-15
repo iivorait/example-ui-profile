@@ -1,11 +1,10 @@
-import React, { FC, useState, useEffect, useRef } from 'react';
+import React, { FC } from 'react';
 
 import {
   KeycloakContextProps,
   KeycloakProviderProps,
   useKeycloak,
 } from './keycloak';
-import { ClientStatus, Client } from '.';
 
 export const KeycloakContext = React.createContext<KeycloakContextProps | null>(
   null

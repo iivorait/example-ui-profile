@@ -1,6 +1,6 @@
 import React from 'react';
 
-import Notification from '../common/notification/NotificationComponent';
+// import Notification from '../common/notification/NotificationComponent';
 import { ToastTypes } from './types';
 
 interface Props {
@@ -12,17 +12,12 @@ interface Props {
   hidden: boolean;
 }
 
+const Notification = (props: React.PropsWithChildren<{}>) => {
+  return <div>{props.children}</div>;
+};
+
 function Toast({ title, type, onClose, hidden, description }: Props) {
-  return (
-    <Notification
-      show={!hidden}
-      labelText={title}
-      type={type}
-      onClose={onClose}
-    >
-      {description}
-    </Notification>
-  );
+  return <Notification>{description}</Notification>;
 }
 
 export default Toast;
