@@ -4,7 +4,7 @@ import { useHistory } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import * as Sentry from '@sentry/browser';
 
-import userManager from '../../userManager';
+//import userManager from '../../userManager';
 
 type Props = {};
 
@@ -20,15 +20,16 @@ function OidcCallback(props: Props) {
     console.log('errrorrrr', error);
   };
   const { t } = useTranslation();
-  return (
-    <CallbackComponent
+  /*
+  <CallbackComponent
       successCallback={onSuccess}
       errorCallback={onError}
       userManager={userManager}
     >
       <p>{t('oidc.authenticating')}</p>
     </CallbackComponent>
-  );
+  */
+  return <div>REPLACE ME</div>;
 }
 
 export default OidcCallback;

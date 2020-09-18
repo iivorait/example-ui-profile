@@ -1,7 +1,7 @@
 import ApolloClient from 'apollo-boost';
 
-import store from '../redux/store';
-import { profileApiTokenSelector } from '../auth/redux';
+// import store from '../redux/store';
+// import { profileApiTokenSelector } from '../auth/redux';
 import getAuthenticatedUser from '../auth/getAuthenticatedUser';
 import fetchApiToken from '../auth/fetchApiToken';
 import pickProfileApiToken from '../auth/pickProfileApiToken';
@@ -11,7 +11,7 @@ const getToken = async () => {
   try {
     console.log('go');
     // First try to get previously fetched token from store
-    const tokenFromStore = profileApiTokenSelector(store.getState());
+    const tokenFromStore = 'foobar'; // profileApiTokenSelector(store.getState());
     if (tokenFromStore) {
       return tokenFromStore;
     }

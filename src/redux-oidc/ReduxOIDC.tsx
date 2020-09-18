@@ -7,7 +7,7 @@ import {
   WebStorageStateStore,
 } from 'oidc-client';
 
-import store from '../redux/store';
+import { store } from '../clients/redux/store';
 // import { fetchApiTokenThunk } from '../auth/redux';
 
 const location = window.location.origin;
