@@ -19,9 +19,9 @@ const Header = () => {
   const keycloak = useKeycloak();
   const authenticated = keycloak.isAuthenticated();
   const initialized = keycloak.isInitialized();
-  const user = keycloak.getUserProfile();
+  const user = keycloak.getUser();
 
-  console.log('user initialized?', initialized, user);
+  console.log('Header: user initialized?', initialized, user);
   const [language, setLanguage] = useState(languageOptions[0]);
   const [active, setActive] = useState<'link' | 'button' | 'dropdown'>();
 
@@ -97,7 +97,7 @@ const Header = () => {
             authenticated={authenticated}
             label="Sign in"
             onSignIn={() => keycloak.login()}
-            userName={user ? `${user.firstName} ${user.lastName}` : '___'}
+            userName={user ? `${user.given_name} ${user.family_name}` : ''}
           >
             <Navigation.Item
               label="Your profile"

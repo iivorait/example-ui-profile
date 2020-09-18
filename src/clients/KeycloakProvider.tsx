@@ -1,23 +1,21 @@
 import React, { FC } from 'react';
 
-import {
-  KeycloakContextProps,
-  KeycloakProviderProps,
-  useKeycloak,
-} from './keycloak';
+import { Client } from '.';
+import { useKeycloak, KeycloakProps } from './keycloak';
 
 export const KeycloakContext = React.createContext<KeycloakContextProps | null>(
   null
 );
 
-export const KeycloakProvider: FC<KeycloakProviderProps> = ({
+export interface KeycloakContextProps {
+  readonly userManager: Client;
+}
+
+export const KeycloakProvider: FC<KeycloakProps> = ({
   clientId,
   realm,
   url,
   children,
-  onSignIn,
-  onSignOut,
-  onBeforeSignIn,
   ...props
 }) => {
   const client = useKeycloak();

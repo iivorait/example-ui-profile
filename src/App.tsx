@@ -2,7 +2,7 @@ import React, { useContext } from 'react';
 // import { useLocation } from 'react-router-dom';
 import { Switch, Route } from 'react-router';
 // import { ApolloProvider } from '@apollo/react-hooks';
-import { Provider as ReduxProvider } from 'react-redux';
+// import { Provider as ReduxProvider } from 'react-redux';
 // import { OidcProvider, loadUser, CallbackComponent } from 'redux-oidc';
 import { MatomoProvider, createInstance } from '@datapunt/matomo-tracker-react';
 import countries from 'i18n-iso-countries';
@@ -22,6 +22,7 @@ import Index from './pages/Index';
 import OIDCReactAuth from './oidc-react/Oidc-react';
 import ReduxOIDCAuth from './redux-oidc/ReduxOIDC';
 import { KeycloakProvider, KeycloakContext } from './clients/KeycloakProvider';
+import StoreProvider from './clients/redux/StoreProvider';
 import Header from './components/Header';
 import PageContainer from './components/PageContainer';
 
@@ -84,7 +85,7 @@ function App(props: Props) {
 
   return (
     <KeycloakProvider>
-      <ReduxProvider store={store}>
+      <StoreProvider>
         <ToastProvider>
           <MatomoProvider value={instance}>
             <AppMeta />
@@ -121,7 +122,7 @@ function App(props: Props) {
             </PageContainer>
           </MatomoProvider>
         </ToastProvider>
-      </ReduxProvider>
+      </StoreProvider>
     </KeycloakProvider>
   );
 }

@@ -6,7 +6,12 @@ import Oidc, {
   User,
 } from 'oidc-client';
 
-import { Client, ClientStatus } from './index';
+import {
+  Client,
+  ClientStatus,
+  ClientStatusIds,
+  User as ClientUser,
+} from './index';
 
 const location = window.location.origin;
 
@@ -38,54 +43,104 @@ export function getClient(settings: Partial<UserManagerSettings>): Client {
     ...settings,
   };
   const manager = new UserManager(mergedSettings);
-  let status: ClientStatus = 'none';
-  let initPromise: Promise<User> | undefined = undefined;
-  let user: User | undefined = undefined;
-  client = {
-    init: () => {
-      if (initPromise) {
-        return initPromise;
-      }
-      status = 'initializing';
-      initPromise = manager.signinSilent();
+  let status: ClientStatusIds = ClientStatus.NONE;
+  let initPromise:
+    | Promise<ClientUser | undefined | null>
+    | undefined = undefined;
+  let user: User | undefined | null = undefined;
 
-      status = 'initialized';
-      initPromise
-        .then(function(authenticated) {
+  const init: Client['init'] = () => {
+    if (initPromise) {
+      return initPromise;
+    }
+    status = ClientStatus.INITIALIZING;
+    initPromise = new Promise((resolve, reject) => {
+      const managerPromise = manager.signinSilent();
+
+      managerPromise
+        .then(function(user) {
           console.log(
-            authenticated ? 'authenticated' : 'not authenticated',
-            authenticated
+            user ? ClientStatus.AUTHORIZED : 'not authenticated',
+            user
           );
-          status = authenticated ? 'authenticated' : 'unauthorized';
+          status = user ? ClientStatus.AUTHORIZED : ClientStatus.UNAUTHORIZED;
+          resolve((user as unknown) as ClientUser);
         })
         .catch(function() {
           console.log('failed to initialize');
-          status = 'authentication-error';
+          status = ClientStatus.UNAUTHORIZED; // set error?
+          reject();
         });
-      return initPromise;
-    },
+    });
+    return initPromise;
+  };
+
+  const isAuthenticated: Client['isAuthenticated'] = () =>
+    status === ClientStatus.AUTHORIZED;
+
+  const isInitialized: Client['isInitialized'] = () =>
+    status === ClientStatus.AUTHORIZED ||
+    status === ClientStatus['LOGGING-OUT'] ||
+    status === ClientStatus.UNAUTHORIZED;
+
+  const getUser: Client['getUser'] = () => {
+    if (isAuthenticated()) {
+      const userData = user && user.profile;
+      if (userData && userData.email && userData.session_state) {
+        return userData;
+      }
+    }
+    return undefined;
+  };
+
+  const getOrLoadUser: Client['getOrLoadUser'] = () => {
+    const user = getUser();
+    if (user) {
+      return Promise.resolve(user);
+    }
+    if (isInitialized()) {
+      return Promise.reject(undefined);
+    }
+    return init();
+  };
+
+  const addListener: Client['addListener'] = (eventType, listener) => {
+    console.log('event!', eventType);
+    return () => true;
+  };
+  const setStatus: Client['setStatus'] = newStatus => {
+    if (newStatus === status) {
+      return false;
+    }
+    status = newStatus;
+    // eventTrigger(ClientEvent.STATUS_CHANGE, status);
+    return true;
+  };
+
+  client = {
+    init,
     login: () => {
       manager.signinRedirect();
     },
     logout: () => {
       manager.signoutRedirect();
     },
-    isAuthenticated: () => status === 'authenticated',
+    isAuthenticated: () => status === ClientStatus.AUTHORIZED,
     isInitialized: () =>
-      status === 'authenticated' ||
-      status === 'authentication-error' ||
-      status === 'logging-out' ||
-      status === 'unauthorized',
+      status === ClientStatus.AUTHORIZED ||
+      status === ClientStatus['LOGGING-OUT'] ||
+      status === ClientStatus.UNAUTHORIZED,
     clearSession: () => {
       return;
     },
+    addListener,
     loadUserProfile: () => {
       return new Promise((resolve, reject) => {
         manager
           .getUser()
           .then(data => {
             user = data || undefined;
-            resolve(user);
+            resolve(user ? ((user as unknown) as ClientUser) : undefined);
           })
           .catch(e => {
             user = undefined;
@@ -93,8 +148,10 @@ export function getClient(settings: Partial<UserManagerSettings>): Client {
           });
       });
     },
+    getUser,
+    getOrLoadUser,
     getUserProfile: () => {
-      return user;
+      return user ? ((user as unknown) as ClientUser) : undefined;
     },
     handleCallback: () => {
       return new Promise((resolve, reject) => {
@@ -111,6 +168,7 @@ export function getClient(settings: Partial<UserManagerSettings>): Client {
       });
     },
     getStatus: () => status,
+    setStatus,
   };
   return client;
 }
@@ -118,13 +176,13 @@ export function getClient(settings: Partial<UserManagerSettings>): Client {
 export const useOidc = (): Client => {
   const clientRef: React.Ref<Client> = useRef(getClient({}));
   const client: Client = clientRef.current as Client;
-  const [, setStatus] = useState<ClientStatus>(client.getStatus());
+  const [, setStatus] = useState<ClientStatusIds>(client.getStatus());
   useEffect(() => {
     const initClient = async (): Promise<void> => {
       if (!client.isInitialized()) {
         await client.init();
       }
-      console.log('inititiated');
+      console.log('initiated');
       if (client.isAuthenticated()) {
         await client.loadUserProfile();
         console.log('user loaded');

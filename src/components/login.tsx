@@ -8,13 +8,7 @@ type LoginProps = {
   client: Client;
 };
 const LoginComponent = ({ client }: LoginProps) => {
-  const {
-    isInitialized,
-    isAuthenticated,
-    logout,
-    login,
-    getUserProfile,
-  } = client;
+  const { isInitialized, isAuthenticated, logout, login, getUser } = client;
   if (!isInitialized()) {
     return (
       <div className={styles['content-element']}>
@@ -23,8 +17,8 @@ const LoginComponent = ({ client }: LoginProps) => {
     );
   }
   if (isAuthenticated()) {
-    const user = getUserProfile();
-    const name = user ? `${user.firstName} ${user.lastName}` : '';
+    const user = getUser();
+    const name = user ? `${user.given_name} ${user.family_name}` : '';
     return (
       <div className={styles['content-element']}>
         <h3>Olet kirjautunut, {name}</h3>
