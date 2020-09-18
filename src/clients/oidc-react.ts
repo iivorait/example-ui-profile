@@ -8,6 +8,7 @@ import Oidc, {
 
 import {
   Client,
+  ClientError,
   ClientStatus,
   ClientStatusIds,
   User as ClientUser,
@@ -48,6 +49,7 @@ export function getClient(settings: Partial<UserManagerSettings>): Client {
     | Promise<ClientUser | undefined | null>
     | undefined = undefined;
   let user: User | undefined | null = undefined;
+  let error: ClientError = undefined;
 
   const init: Client['init'] = () => {
     if (initPromise) {
@@ -79,9 +81,7 @@ export function getClient(settings: Partial<UserManagerSettings>): Client {
     status === ClientStatus.AUTHORIZED;
 
   const isInitialized: Client['isInitialized'] = () =>
-    status === ClientStatus.AUTHORIZED ||
-    status === ClientStatus['LOGGING-OUT'] ||
-    status === ClientStatus.UNAUTHORIZED;
+    status === ClientStatus.AUTHORIZED || status === ClientStatus.UNAUTHORIZED;
 
   const getUser: Client['getUser'] = () => {
     if (isAuthenticated()) {
@@ -128,7 +128,6 @@ export function getClient(settings: Partial<UserManagerSettings>): Client {
     isAuthenticated: () => status === ClientStatus.AUTHORIZED,
     isInitialized: () =>
       status === ClientStatus.AUTHORIZED ||
-      status === ClientStatus['LOGGING-OUT'] ||
       status === ClientStatus.UNAUTHORIZED,
     clearSession: () => {
       return;
@@ -169,6 +168,8 @@ export function getClient(settings: Partial<UserManagerSettings>): Client {
     },
     getStatus: () => status,
     setStatus,
+    getError: () => error,
+    setError: err => !!((error = err) && false),
   };
   return client;
 }

@@ -1,6 +1,6 @@
 import React from 'react';
+import { Notification } from 'hds-react';
 
-// import Notification from '../common/notification/NotificationComponent';
 import { ToastTypes } from './types';
 
 interface Props {
@@ -12,12 +12,12 @@ interface Props {
   hidden: boolean;
 }
 
-const Notification = (props: React.PropsWithChildren<{}>) => {
-  return <div>{props.children}</div>;
-};
-
 function Toast({ title, type, onClose, hidden, description }: Props) {
-  return <Notification>{description}</Notification>;
+  return (
+    <Notification label={title} type={type}>
+      {description}
+    </Notification>
+  );
 }
 
 export default Toast;

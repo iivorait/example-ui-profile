@@ -11,7 +11,6 @@ import en from 'i18n-iso-countries/langs/en.json';
 import sv from 'i18n-iso-countries/langs/sv.json';
 
 // import graphqlClient from './graphql/client';
-import store from './redux/store';
 import OidcCallback from './auth/components/oidcCallback/OidcCallback';
 import AppMeta from './AppMeta';
 //import useAuthenticate from './auth/useAuthenticate';

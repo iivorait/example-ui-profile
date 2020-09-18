@@ -19,7 +19,6 @@ export const KeycloakProvider: FC<KeycloakProps> = ({
   ...props
 }) => {
   const client = useKeycloak();
-  console.log('KeycloakProvider render');
   return (
     <KeycloakContext.Provider
       value={{

@@ -4,6 +4,7 @@ import { KeycloakContext } from '../clients/KeycloakProvider';
 import LoginComponent from '../components/login';
 import PageContent from '../components/PageContent';
 import ReduxConsumer from '../components/ReduxConsumer';
+import WithAuthDemo from '../components/WithAuthDemo';
 
 const IndexPage = () => {
   const keycloak = useContext(KeycloakContext);
@@ -13,6 +14,7 @@ const IndexPage = () => {
         <>
           <LoginComponent client={keycloak.userManager} />
           <ReduxConsumer />
+          <WithAuthDemo />
         </>
       ) : (
         <div>Keycloak client not found</div>
