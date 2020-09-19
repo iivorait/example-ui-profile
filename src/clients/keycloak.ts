@@ -206,26 +206,6 @@ export function getClient(config: Partial<Keycloak.KeycloakConfig>): Client {
     statusChanged && eventTrigger(status, getUser());
   };
 
-  keycloak.onReady = authenticated => onAuthChange(!!authenticated);
-  keycloak.onAuthSuccess = () => onAuthChange(true);
-  keycloak.onAuthError = errorData => {
-    onAuthChange(false);
-    setError({
-      type: ClientError.AUTH_ERROR,
-      message: errorData.error_description,
-    });
-  };
-  // keycloak.onAuthRefreshSuccess = () => eventTrigger('onAuthRefreshSuccess');
-  keycloak.onAuthRefreshError = () => {
-    eventTrigger(ClientStatus.UNAUTHORIZED, { error: true });
-    setError({
-      type: ClientError.AUTH_REFRESH_ERROR,
-      message: '',
-    });
-  };
-  keycloak.onAuthLogout = () => onAuthChange(false);
-  keycloak.onTokenExpired = () => eventTrigger(ClientEvent.USER_EXPIRED);
-
   const login: Client['login'] = () => {
     keycloak.login({
       redirectUri: 'http://localhost:3000/',
@@ -316,6 +296,27 @@ export function getClient(config: Partial<Keycloak.KeycloakConfig>): Client {
     getError,
     setError,
   };
+
+  keycloak.onReady = authenticated => onAuthChange(!!authenticated);
+  keycloak.onAuthSuccess = () => onAuthChange(true);
+  keycloak.onAuthError = errorData => {
+    onAuthChange(false);
+    setError({
+      type: ClientError.AUTH_ERROR,
+      message: errorData.error_description,
+    });
+  };
+  // keycloak.onAuthRefreshSuccess = () => eventTrigger('onAuthRefreshSuccess');
+  keycloak.onAuthRefreshError = () => {
+    eventTrigger(ClientStatus.UNAUTHORIZED, { error: true });
+    setError({
+      type: ClientError.AUTH_REFRESH_ERROR,
+      message: '',
+    });
+  };
+  keycloak.onAuthLogout = () => onAuthChange(false);
+  keycloak.onTokenExpired = () => eventTrigger(ClientEvent.USER_EXPIRED);
+
   return client;
 }
 
