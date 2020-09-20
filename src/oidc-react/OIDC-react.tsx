@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 
-import { getClient } from '../clients/oidc-react';
+import { getClient } from '../clients/oidc-react_OLD';
 
 export default function OIDCReactAuth(props?: { verifyCallback?: boolean }) {
   const verify = !!(props && props.verifyCallback);

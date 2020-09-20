@@ -4,6 +4,7 @@ import WithAuth, { WithAuthChildProps } from '../clients/WithAuth';
 
 const AuthComponent = (props: WithAuthChildProps) => {
   const user = props.client.getUser();
+  console.log('user', user);
   return <div>Authorized user is {user && user.given_name}</div>;
 };
 const UnAuthComponent = (props: WithAuthChildProps) => {

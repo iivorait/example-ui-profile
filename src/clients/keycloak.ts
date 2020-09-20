@@ -11,6 +11,7 @@ import {
   EventListener,
   ClientError,
 } from './index';
+import { useOidc } from './oidc-react';
 
 export interface KeycloakProps {
   /**
@@ -133,12 +134,13 @@ export function getClient(config: Partial<Keycloak.KeycloakConfig>): Client {
               refreshToken: keycloak.refreshToken,
             });
             resolve(keycloak.tokenParsed as User);
+            return;
           }
           resolve(undefined);
         })
         .catch(function(e: any) {
-          status = ClientStatus.UNAUTHORIZED;
-          // error set in event
+          onAuthChange(false);
+          // error set in event listener
           reject();
         });
     });
@@ -167,7 +169,7 @@ export function getClient(config: Partial<Keycloak.KeycloakConfig>): Client {
       return Promise.resolve(user);
     }
     if (isInitialized()) {
-      return Promise.reject(undefined);
+      return Promise.resolve(undefined);
     }
     return init();
   };
@@ -321,14 +323,19 @@ export function getClient(config: Partial<Keycloak.KeycloakConfig>): Client {
 }
 
 export const useKeycloak = (): Client => {
+  //return useOidc();
   const clientRef: React.Ref<Client> = useRef(getClient({}));
   const client: Client = clientRef.current as Client;
   const [, setStatus] = useState<ClientStatusIds>(client.getStatus());
-  const [, setError] = useState<ClientError>(undefined);
   useEffect(() => {
     const initClient = async (): Promise<void> => {
       if (!client.isInitialized()) {
-        await client.getOrLoadUser();
+        await client.getOrLoadUser().catch(e =>
+          client.setError({
+            type: ClientError.INIT_ERROR,
+            message: e && e.toString(),
+          })
+        );
       }
       setStatus(client.getStatus());
       return;

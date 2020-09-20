@@ -10,7 +10,7 @@ import en from 'i18n-iso-countries/langs/en.json';
 import sv from 'i18n-iso-countries/langs/sv.json';
 
 // import graphqlClient from './graphql/client';
-import OidcCallback from './auth/components/oidcCallback/OidcCallback';
+// import OidcCallback from './auth/components/oidcCallback/OidcCallback';
 import AppMeta from './AppMeta';
 //import useAuthenticate from './auth/useAuthenticate';
 // import authConstants from './auth/constants/authConstants';
@@ -19,6 +19,7 @@ import Index from './pages/Index';
 import OIDCReactAuth from './oidc-react/Oidc-react';
 import ReduxOIDCAuth from './redux-oidc/ReduxOIDC';
 import { KeycloakProvider, KeycloakContext } from './clients/KeycloakProvider';
+import OidcCallback from './clients/OidcCallback';
 import StoreProvider from './clients/redux/StoreProvider';
 import Header from './components/Header';
 import PageContainer from './components/PageContainer';
@@ -72,8 +73,7 @@ function App(props: Props) {
             </Route>
             <Route path={['/callback']} exact>
               <div>CallBack</div>
-              <OIDCReactAuth verifyCallback />
-              {window.location.href === 'aaa' && <OidcCallback />}
+              <OidcCallback successRedirect="/" failureRedirect="/" />
             </Route>
             <Route path="*">404 - not found</Route>
           </Switch>
