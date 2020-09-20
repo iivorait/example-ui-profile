@@ -1,7 +1,0 @@
-query NameQuery {
-  myProfile {
-    firstName
-    lastName
-    nickname
-  }
-}

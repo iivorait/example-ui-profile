@@ -1,3 +1,0 @@
-query DownloadMyProfileQuery($authorizationCode: String!) {
-  downloadMyProfile(authorizationCode: $authorizationCode)
-}

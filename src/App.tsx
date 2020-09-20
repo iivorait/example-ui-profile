@@ -16,8 +16,6 @@ import AppMeta from './AppMeta';
 // import authConstants from './auth/constants/authConstants';
 import IndexPage from './index/IndexPage';
 import Index from './pages/Index';
-import OIDCReactAuth from './oidc-react/Oidc-react';
-import ReduxOIDCAuth from './redux-oidc/ReduxOIDC';
 import { KeycloakProvider, KeycloakContext } from './clients/KeycloakProvider';
 import OidcCallback from './clients/OidcCallback';
 import StoreProvider from './clients/redux/StoreProvider';
@@ -65,11 +63,11 @@ function App(props: Props) {
             </Route>
             <Route path={['/oidc']} exact>
               <ReRenderIndicator />
-              <OIDCReactAuth />
+              <div>Oidc should be used via hooks</div>
             </Route>
             <Route path={['/redux']} exact>
               <ReRenderIndicator />
-              <ReduxOIDCAuth />
+              <div>Redux included already</div>
             </Route>
             <Route path={['/callback']} exact>
               <div>CallBack</div>
