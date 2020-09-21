@@ -1,15 +1,26 @@
 import React from 'react';
 
 import WithAuth, { WithAuthChildProps } from '../clients/WithAuth';
+import DemoWrapper from './DemoWrapper';
 
 const AuthComponent = (props: WithAuthChildProps) => {
   const user = props.client.getUser();
-  console.log('user', user);
-  return <div>Authorized user is {user && user.given_name}</div>;
+  return (
+    <DemoWrapper title="Sisältö vain kirjatuneelle">
+      <div>
+        Tämä sisältö on kirjautuneelle.Kirjautunut käyttäjä on{' '}
+        {user && user.given_name}
+      </div>
+    </DemoWrapper>
+  );
 };
 const UnAuthComponent = (props: WithAuthChildProps) => {
   const initialized = props.client.isInitialized();
-  return initialized ? <div>User not logged in</div> : null;
+  return initialized ? (
+    <DemoWrapper title="Sisältö kirjautumattomalle">
+      <div>Et ole kirjautunut sisään...</div>
+    </DemoWrapper>
+  ) : null;
 };
 
 const WithAuthDemo = () => {

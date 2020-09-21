@@ -10,10 +10,12 @@
   max-width: 800px;
   margin:0 auto;
   padding: 20px 0;
+  width: 100%;
 }
 
 .content-element {
   padding:20px 0;
+  width: 100%;
 }
 
 .content > * {
@@ -48,5 +50,21 @@
   width: 60%;
   max-width: 400px;
   z-index: 2;
+}
+
+.demo-box {
+  margin:40px 0 40px;
+  border:1px solid #333;
+  padding:10px;
+  position:relative;
+  width: 100%;
+}
+
+.demo-box h4 {
+  position:absolute;
+  top: -32px;
+  left: 0px;
+  font-size:12px;
+  color:#aaa;
 }
 

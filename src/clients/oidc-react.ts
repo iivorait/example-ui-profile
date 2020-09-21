@@ -75,7 +75,6 @@ const defaultOptions: UserManagerSettings = {
   silent_redirect_uri: `${location}/silent_renew.html`,
   post_logout_redirect_uri: `${location}/`,
   // This calculates to 1 minute, good for debugging:
-  // https://github.com/City-of-Helsinki/kukkuu-ui/blob/8029ed64c3d0496fa87fa57837c73520e8cbe37f/src/domain/auth/userManager.ts#L18
   // accessTokenExpiringNotificationTime: 59.65 * 60,
 };
 /* eslint-enable @typescript-eslint/camelcase */
@@ -181,7 +180,6 @@ export function getClient(config: Partial<UserManagerSettings>): Client {
   };
 
   const onAuthChange = (authenticated: boolean) => {
-    console.log('onAuthChange', authenticated, status);
     if (isInitialized() && authenticated === isAuthenticated()) {
       return false;
     }
@@ -206,14 +204,12 @@ export function getClient(config: Partial<UserManagerSettings>): Client {
       setStatus(ClientStatus.INITIALIZING);
       manager
         .signinRedirectCallback()
-        .then((e: any) => {
-          console.log('signinRedirectCallback', e);
+        .then((e: User | undefined) => {
           user = e;
           onAuthChange(true);
           resolve(e);
         })
         .catch(e => {
-          console.log('signinRedirectCallback catch', e);
           setError({
             type: ClientError.AUTH_ERROR, // todo: new error type
             message: e && e.toString(),

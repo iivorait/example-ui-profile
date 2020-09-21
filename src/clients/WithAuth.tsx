@@ -6,8 +6,8 @@ import { useKeycloak } from './keycloak';
 export type WithAuthChildProps = { client: Client };
 
 const WithAuth = (
-  AuthorizedContent: React.ComponentType<any | string>,
-  UnAuthorizedContent: React.ComponentType<any | string>
+  AuthorizedContent: React.ComponentType<WithAuthChildProps>,
+  UnAuthorizedContent: React.ComponentType<WithAuthChildProps>
 ) => {
   const client = useKeycloak();
   return client.isAuthenticated() ? (

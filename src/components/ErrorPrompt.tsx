@@ -1,19 +1,20 @@
 import React, { useState } from 'react';
 import { Notification } from 'hds-react';
 
-import { useKeycloakErrorDetection, useKeycloak } from '../clients/keycloak';
+import { useKeycloakErrorDetection } from '../clients/keycloak';
 import { ClientError } from '../clients';
 import styles from './styles.module.css';
 
 const ErrorPrompt = (props: React.PropsWithChildren<{}>) => {
   const [dismissedError, setDismissedError] = useState<ClientError>(undefined);
   const newError = useKeycloakErrorDetection();
-  const client = useKeycloak();
   const lastErrorType = dismissedError && dismissedError.type;
   const newErrorType = newError && newError.type;
   if (lastErrorType === newErrorType) {
     return null;
   }
+  const sessionEndedElsewhere =
+    newErrorType === ClientError.UNEXPECTED_AUTH_CHANGE;
   const Prompt = () =>
     newError ? (
       <div className={styles['error-prompt-container']}>
@@ -25,7 +26,9 @@ const ErrorPrompt = (props: React.PropsWithChildren<{}>) => {
             dismissible
             closeButtonLabelText={'Sulje'}
           >
-            Virhekoodi:{newErrorType}
+            {sessionEndedElsewhere
+              ? `Käyttäjän sessio on päättynyt ilman uloskirjautumista tässä ikkunassa`
+              : `Virhekoodi:${newErrorType}`}
           </Notification>
         </div>
         <div className={styles['error-prompt-overlay']}></div>

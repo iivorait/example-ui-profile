@@ -11,7 +11,6 @@ import {
   EventListener,
   ClientError,
 } from './index';
-import { useOidc } from './oidc-react';
 
 export interface KeycloakProps {
   /**
@@ -138,7 +137,7 @@ export function getClient(config: Partial<Keycloak.KeycloakConfig>): Client {
           }
           resolve(undefined);
         })
-        .catch(function(e: any) {
+        .catch(function() {
           onAuthChange(false);
           // error set in event listener
           reject();
@@ -190,7 +189,6 @@ export function getClient(config: Partial<Keycloak.KeycloakConfig>): Client {
     eventType: ClientEventIds,
     payload?: string | {} | boolean
   ) => {
-    console.log('eventTrigger', eventType);
     const source = listeners.get(eventType);
     source &&
       source.size &&
@@ -198,7 +196,6 @@ export function getClient(config: Partial<Keycloak.KeycloakConfig>): Client {
   };
 
   const onAuthChange = (authenticated: boolean) => {
-    console.log('onAuthChange', authenticated, status);
     if (isInitialized() && authenticated === isAuthenticated()) {
       return false;
     }
@@ -364,7 +361,6 @@ export const useKeycloakErrorDetection = (): ClientError => {
     const statusListenerDisposer = client.addListener(
       ClientEvent.STATUS_CHANGE,
       (client, status) => {
-        console.log('error detection status change:', status);
         if (status === ClientStatus.AUTHORIZED) {
           isAuthorized = true;
         }
