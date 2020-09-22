@@ -6747,25 +6747,25 @@ hash.js@^1.0.0, hash.js@^1.0.3:
     inherits "^2.0.3"
     minimalistic-assert "^1.0.1"
 
-hds-core@0.13.1:
-  version "0.13.1"
-  resolved "https://registry.yarnpkg.com/hds-core/-/hds-core-0.13.1.tgz#c693a3c259f891fe780a42c37fd5738f21ae6814"
-  integrity sha512-Qt+C8vQCmJQCpOCWN2l4s4lcVtBUy8kr6eS7VeGaLRpHyG1gjbFrIIvYZmfrvvx829yjGKOTtfvIpW9c3eZCKg==
+hds-core@0.13.2:
+  version "0.13.2"
+  resolved "https://registry.yarnpkg.com/hds-core/-/hds-core-0.13.2.tgz#97653095f495a7f28c3c00961a032bb6bf5f50cc"
+  integrity sha512-c/Yx4oypbMqaKnzv6oSMdk5OdVF7u9wYEOJJJreYtN+HrREVWudu/bla39vDE3j4tjvlob2EvkjEW8ceiG18Rg==
 
-hds-design-tokens@0.13.1:
-  version "0.13.1"
-  resolved "https://registry.yarnpkg.com/hds-design-tokens/-/hds-design-tokens-0.13.1.tgz#c2824f9ce29ce278bfa823037cd72edb3fe66122"
-  integrity sha512-wQJ6xFM9eA11pSoxI/37oEFiTYQkWOaiBL3ucJiliya8OlCiZjlHyvQ3jJzQZWEvHVVaqK0Gj+GS+mjBne7x1A==
+hds-design-tokens@0.13.2:
+  version "0.13.2"
+  resolved "https://registry.yarnpkg.com/hds-design-tokens/-/hds-design-tokens-0.13.2.tgz#dcb2bbe77380895a492b69472e4500137cc15958"
+  integrity sha512-vivDK2bB9/ZvY8Rz4tU3FItQkoLw1wI8oJwumHcBcGK4gXFLVQkaxu/mKVldMqVBZ26mGZFLsx96C1ig5dURsg==
 
-hds-react@0.13.1:
-  version "0.13.1"
-  resolved "https://registry.yarnpkg.com/hds-react/-/hds-react-0.13.1.tgz#b3fb190f5f2571576602a481442823382ed05a43"
-  integrity sha512-Jg7ilecr4aBtMKyqkGhLjT/V5ehtfycaaOsOiKHPM6KN6qC6A9T9nubvTb5a7kgGe1Mc1WXC4hr3iYwBZwstQw==
+hds-react@0.13.2:
+  version "0.13.2"
+  resolved "https://registry.yarnpkg.com/hds-react/-/hds-react-0.13.2.tgz#cc230331f1daaa6996dde85e58ef017b865f4001"
+  integrity sha512-go3TuL2aAdgjWPR5PT2OPM75+H7mrIckEnOvvuuJkpngxAA2mAsQRQwPQ5oZcT0sjRS0n8eB6gdF2QQkTazMgw==
   dependencies:
     "@babel/runtime" "7.11.2"
     "@react-aria/visually-hidden" "3.2.0"
     downshift "5.4.0"
-    hds-core "0.13.1"
+    hds-core "0.13.2"
     lodash.isequal "4.5.0"
     lodash.uniqueid "4.0.1"
     react-spring "9.0.0-rc.3"
