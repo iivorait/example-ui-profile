@@ -5,10 +5,7 @@ import { store, connectClient } from './store';
 import { connected } from './actions';
 import { useKeycloak } from '../keycloak';
 
-const StoreProvider: FC<React.PropsWithChildren<{}>> = ({
-  children,
-  ...props
-}) => {
+const StoreProvider: FC<React.PropsWithChildren<{}>> = ({ children }) => {
   const client = useKeycloak();
   useEffect(() => {
     connectClient(client);

@@ -8,7 +8,7 @@ export type WithAuthChildProps = { client: Client };
 const WithAuth = (
   AuthorizedContent: React.ComponentType<WithAuthChildProps>,
   UnAuthorizedContent: React.ComponentType<WithAuthChildProps>
-) => {
+): React.ReactElement => {
   const client = useKeycloak();
   return client.isAuthenticated() ? (
     <AuthorizedContent client={client} />

@@ -6,7 +6,7 @@ import PageContent from '../components/PageContent';
 import ReduxConsumer from '../components/ReduxConsumer';
 import WithAuthDemo from '../components/WithAuthDemo';
 
-const IndexPage = () => {
+const IndexPage = (): React.ReactElement => {
   const keycloak = useContext(KeycloakContext);
   return (
     <PageContent>

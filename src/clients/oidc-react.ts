@@ -3,7 +3,7 @@ import Oidc, {
   UserManager,
   UserManagerSettings,
   WebStorageStateStore,
-  User,
+  User
 } from 'oidc-client';
 
 import {
@@ -11,10 +11,9 @@ import {
   ClientStatus,
   ClientStatusIds,
   User as ClientUser,
-  ClientEventIds,
   ClientEvent,
-  EventListener,
   ClientError,
+  createEventHandling
 } from './index';
 
 export interface KeycloakProps {
@@ -73,7 +72,7 @@ const defaultOptions: UserManagerSettings = {
   redirect_uri: `${location}/callback`,
   response_type: 'id_token token',
   silent_redirect_uri: `${location}/silent_renew.html`,
-  post_logout_redirect_uri: `${location}/`,
+  post_logout_redirect_uri: `${location}/`
   // This calculates to 1 minute, good for debugging:
   // accessTokenExpiringNotificationTime: 59.65 * 60,
 };
@@ -87,53 +86,31 @@ export function getClient(config: Partial<UserManagerSettings>): Client {
   }
   const mergedConfig: UserManagerSettings = {
     ...defaultOptions,
-    ...config,
+    ...config
   };
-  Oidc.Log.logger = console;
+  // Oidc.Log.logger = console;
   Oidc.Log.level = 4;
   const manager = new UserManager(mergedConfig);
   let status: ClientStatusIds = ClientStatus.NONE;
-  let error: ClientError = undefined;
-  let initPromise: Promise<ClientUser | undefined> | undefined = undefined;
-  let user: User | undefined = undefined;
-  const listeners: Map<ClientEventIds, Set<EventListener>> = new Map();
-
-  const init: Client['init'] = () => {
-    if (initPromise) {
-      return initPromise;
-    }
-    status = ClientStatus.INITIALIZING;
-    initPromise = new Promise((resolve, reject) => {
-      manager
-        .signinSilent()
-        .then(function(loadedUser) {
-          const authenticated = !!loadedUser;
-          if (authenticated) {
-            user = loadedUser;
-            onAuthChange(true);
-            resolve((loadedUser as unknown) as ClientUser);
-            return;
-          }
-          onAuthChange(false);
-          resolve(undefined);
-        })
-        .catch(function(errorData: Error) {
-          setError({
-            type: ClientError.AUTH_ERROR,
-            message: errorData.message,
-          });
-          onAuthChange(false);
-          reject(errorData);
-        });
-    });
-    return initPromise;
-  };
+  let error: ClientError;
+  let initPromise: Promise<ClientUser | undefined> | undefined;
+  let user: User | undefined;
+  const { addListener, eventTrigger } = createEventHandling();
 
   const isAuthenticated: Client['isAuthenticated'] = () =>
     status === ClientStatus.AUTHORIZED;
 
   const isInitialized: Client['isInitialized'] = () =>
     status === ClientStatus.AUTHORIZED || status === ClientStatus.UNAUTHORIZED;
+
+  const setStatus: Client['setStatus'] = newStatus => {
+    if (newStatus === status) {
+      return false;
+    }
+    status = newStatus;
+    eventTrigger(ClientEvent.STATUS_CHANGE, status);
+    return true;
+  };
 
   const getUser: Client['getUser'] = () => {
     if (isAuthenticated()) {
@@ -145,10 +122,72 @@ export function getClient(config: Partial<UserManagerSettings>): Client {
     return undefined;
   };
 
+  const onAuthChange = (authenticated: boolean): boolean => {
+    if (isInitialized() && authenticated === isAuthenticated()) {
+      return false;
+    }
+    const statusChanged = setStatus(
+      authenticated ? ClientStatus.AUTHORIZED : ClientStatus.UNAUTHORIZED
+    );
+    if (statusChanged) {
+      eventTrigger(status, getUser());
+    }
+    return true;
+  };
+
+  const setError: Client['setError'] = newError => {
+    const oldType = error && error.type;
+    const newType = newError && newError.type;
+    if (oldType === newType) {
+      return false;
+    }
+    error = newError;
+    if (newType) {
+      eventTrigger(ClientEvent.ERROR, error);
+    }
+    return true;
+  };
+
+  const init: Client['init'] = () => {
+    if (initPromise) {
+      return initPromise;
+    }
+    status = ClientStatus.INITIALIZING;
+    initPromise = new Promise((resolve, reject) => {
+      manager
+        .signinSilent()
+        .then((loadedUser: User) => {
+          const authenticated = !!loadedUser;
+          if (authenticated) {
+            user = loadedUser;
+            onAuthChange(true);
+            resolve((loadedUser as unknown) as ClientUser);
+            return;
+          }
+          onAuthChange(false);
+          resolve(undefined);
+        })
+        .catch((errorData?: Error) => {
+          const reason = errorData ? errorData.message : '';
+          onAuthChange(false);
+          if (reason !== 'login_required') {
+            setError({
+              type: ClientError.AUTH_ERROR,
+              message: reason
+            });
+            reject(errorData);
+            return;
+          }
+          resolve(undefined);
+        });
+    });
+    return initPromise;
+  };
+
   const getOrLoadUser: Client['getOrLoadUser'] = () => {
-    const user = getUser();
-    if (user) {
-      return Promise.resolve(user);
+    const currentUser = getUser();
+    if (currentUser) {
+      return Promise.resolve(currentUser);
     }
     if (isInitialized()) {
       return Promise.resolve(undefined);
@@ -156,6 +195,7 @@ export function getClient(config: Partial<UserManagerSettings>): Client {
     return init();
   };
 
+  /*
   const addListener: Client['addListener'] = (eventType, listener) => {
     if (!listeners.has(eventType)) {
       listeners.set(eventType, new Set());
@@ -178,22 +218,14 @@ export function getClient(config: Partial<UserManagerSettings>): Client {
       source.size &&
       source.forEach(listener => listener(client as Client, payload));
   };
-
-  const onAuthChange = (authenticated: boolean) => {
-    if (isInitialized() && authenticated === isAuthenticated()) {
-      return false;
-    }
-    const statusChanged = setStatus(
-      authenticated ? ClientStatus.AUTHORIZED : ClientStatus.UNAUTHORIZED
-    );
-    statusChanged && eventTrigger(status, getUser());
-  };
+  */
 
   const login: Client['login'] = () => {
     manager.signinRedirect();
   };
 
   const logout: Client['logout'] = () => {
+    eventTrigger(ClientEvent.LOGGING_OUT);
     manager.signoutRedirect();
   };
 
@@ -207,12 +239,12 @@ export function getClient(config: Partial<UserManagerSettings>): Client {
         .then((e: User | undefined) => {
           user = e;
           onAuthChange(true);
-          resolve(e);
+          resolve((e as unknown) as ClientUser);
         })
         .catch(e => {
           setError({
             type: ClientError.AUTH_ERROR, // todo: new error type
-            message: e && e.toString(),
+            message: e && e.toString()
           });
           onAuthChange(false);
           reject(e);
@@ -232,7 +264,7 @@ export function getClient(config: Partial<UserManagerSettings>): Client {
           user = undefined;
           setError({
             type: ClientError.LOAD_ERROR,
-            message: e && e.toString(),
+            message: e && e.toString()
           });
           reject(e);
         });
@@ -247,28 +279,8 @@ export function getClient(config: Partial<UserManagerSettings>): Client {
     return status;
   };
 
-  const setStatus: Client['setStatus'] = newStatus => {
-    if (newStatus === status) {
-      return false;
-    }
-    status = newStatus;
-    eventTrigger(ClientEvent.STATUS_CHANGE, status);
-    return true;
-  };
-
   const getError: Client['getError'] = () => {
     return error;
-  };
-
-  const setError: Client['setError'] = newError => {
-    const oldType = error && error.type;
-    const newType = newError && newError.type;
-    if (oldType === newType) {
-      return false;
-    }
-    error = newError;
-    newType && eventTrigger(ClientEvent.ERROR, error);
-    return true;
   };
 
   client = {
@@ -287,70 +299,75 @@ export function getClient(config: Partial<UserManagerSettings>): Client {
     getStatus,
     setStatus,
     getError,
-    setError,
+    setError
   };
 
   // manager.events.onReady = authenticated => onAuthChange();
   // manager.events.onAuthRefreshSuccess = () => eventTrigger('onAuthRefreshSuccess');
   // manager.events.addAccessTokenExpiring
   // manager.events.addUserLoaded = () => onAuthChange(true);
-  manager.events.addUserUnloaded = () => onAuthChange(false);
-  manager.events.addUserSignedOut = () => onAuthChange(false);
-  manager.events.addUserSessionChanged = () => onAuthChange(false);
-
-  manager.events.addSilentRenewError = error => {
-    eventTrigger(ClientStatus.UNAUTHORIZED, { error: true });
+  manager.events.addUserUnloaded((): boolean => onAuthChange(false));
+  manager.events.addUserSignedOut((): boolean => {
+    return onAuthChange(false);
+  });
+  manager.events.addUserSessionChanged((): boolean => onAuthChange(false));
+  manager.events.addSilentRenewError((renewError?: {}): void => {
+    const errorObj = renewError
+      ? ((renewError as unknown) as Error)
+      : undefined;
+    const message = errorObj ? errorObj.message : '';
+    eventTrigger(ClientStatus.UNAUTHORIZED, { error: message });
     setError({
       type: ClientError.AUTH_REFRESH_ERROR,
-      message: error && ((error as unknown) as Error).message,
+      message
     });
-  };
-  manager.events.addAccessTokenExpired = () =>
-    eventTrigger(ClientEvent.USER_EXPIRED);
+  });
+  manager.events.addAccessTokenExpired((): void =>
+    eventTrigger(ClientEvent.USER_EXPIRED)
+  );
 
   return client;
 }
 
 export const useOidc = (): Client => {
   const clientRef: React.Ref<Client> = useRef(getClient({}));
-  const client: Client = clientRef.current as Client;
-  const [, setStatus] = useState<ClientStatusIds>(client.getStatus());
+  const clientFromRef: Client = clientRef.current as Client;
+  const [, setStatus] = useState<ClientStatusIds>(clientFromRef.getStatus());
   useEffect(() => {
     const initClient = async (): Promise<void> => {
-      if (!client.isInitialized()) {
-        await client.getOrLoadUser().catch(e =>
-          client.setError({
+      if (!clientFromRef.isInitialized()) {
+        await clientFromRef.getOrLoadUser().catch(e => {
+          clientFromRef.setError({
             type: ClientError.INIT_ERROR,
-            message: e && e.toString(),
-          })
-        );
+            message: e && e.toString()
+          });
+        });
       }
-      setStatus(client.getStatus());
     };
-    const statusListenerDisposer = client.addListener(
+    const statusListenerDisposer = clientFromRef.addListener(
       ClientEvent.STATUS_CHANGE,
-      (client, status) => {
-        setStatus(status);
+      status => {
+        setStatus(status as ClientStatusIds);
       }
     );
 
     initClient();
-    return () => {
+    return (): void => {
       statusListenerDisposer();
     };
-  }, [client]);
-  return client;
+  }, [clientFromRef]);
+  return clientFromRef;
 };
 
 export const useOidcErrorDetection = (): ClientError => {
   const clientRef: React.Ref<Client> = useRef(getClient({}));
-  const client: Client = clientRef.current as Client;
+  const clientFromRef: Client = clientRef.current as Client;
   const [error, setError] = useState<ClientError>(undefined);
   useEffect(() => {
     let isAuthorized = false;
-    const statusListenerDisposer = client.addListener(
+    const statusListenerDisposer = clientFromRef.addListener(
       ClientEvent.STATUS_CHANGE,
-      (client, status) => {
+      status => {
         if (status === ClientStatus.AUTHORIZED) {
           isAuthorized = true;
         }
@@ -361,48 +378,47 @@ export const useOidcErrorDetection = (): ClientError => {
       }
     );
 
-    const errorListenerDisposer = client.addListener(
+    const errorListenerDisposer = clientFromRef.addListener(
       ClientEvent.ERROR,
-      (client, newError) => {
-        setError(newError);
+      newError => {
+        setError(newError as ClientError);
       }
     );
 
-    return () => {
+    return (): void => {
       errorListenerDisposer();
       statusListenerDisposer();
     };
-  }, [client]);
+  }, [clientFromRef]);
   return error;
 };
 
 export const useOidcCallback = (): Client => {
   const clientRef: React.Ref<Client> = useRef(getClient({}));
-  const client: Client = clientRef.current as Client;
-  const [, setStatus] = useState<ClientStatusIds>(client.getStatus());
+  const clientFromRef: Client = clientRef.current as Client;
+  const [, setStatus] = useState<ClientStatusIds>(clientFromRef.getStatus());
   useEffect(() => {
     const initClient = async (): Promise<void> => {
-      if (!client.isInitialized()) {
-        await client.handleCallback().catch(e =>
-          client.setError({
+      if (!clientFromRef.isInitialized()) {
+        await clientFromRef.handleCallback().catch(e =>
+          clientFromRef.setError({
             type: ClientError.INIT_ERROR,
-            message: e && e.toString(),
+            message: e && e.toString()
           })
         );
       }
-      setStatus(client.getStatus());
     };
-    const statusListenerDisposer = client.addListener(
+    const statusListenerDisposer = clientFromRef.addListener(
       ClientEvent.STATUS_CHANGE,
-      (client, status) => {
-        setStatus(status);
+      status => {
+        setStatus(status as ClientStatusIds);
       }
     );
 
     initClient();
-    return () => {
+    return (): void => {
       statusListenerDisposer();
     };
-  }, [client]);
-  return client;
+  }, [clientFromRef]);
+  return clientFromRef;
 };

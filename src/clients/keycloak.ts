@@ -6,10 +6,9 @@ import {
   ClientStatus,
   ClientStatusIds,
   User,
-  ClientEventIds,
   ClientEvent,
-  EventListener,
   ClientError,
+  createEventHandling
 } from './index';
 
 export interface KeycloakProps {
@@ -60,18 +59,18 @@ export interface KeycloakProps {
 const defaultOptions: Keycloak.KeycloakConfig = {
   url: 'https://tunnistus.hel.ninja/auth',
   realm: 'helsinki-tunnistus',
-  clientId: 'https://api.hel.fi/auth/example-ui-profile',
+  clientId: 'https://api.hel.fi/auth/example-ui-profile'
 };
 
 function setSessionStorageTokens({
   token,
   idToken,
-  refreshToken,
+  refreshToken
 }: {
   token: string | undefined;
   idToken: string | undefined;
   refreshToken: string | undefined;
-}) {
+}): void {
   localStorage.setItem('token', token || '');
   localStorage.setItem('idToken', idToken || '');
   localStorage.setItem('refreshToken', refreshToken || '');
@@ -85,7 +84,7 @@ function getSessionStorageTokens(): {
   return {
     token: localStorage.getItem('token') || undefined,
     idToken: localStorage.getItem('idToken') || undefined,
-    refreshToken: localStorage.getItem('refreshToken') || undefined,
+    refreshToken: localStorage.getItem('refreshToken') || undefined
   };
 }
 
@@ -97,15 +96,77 @@ export function getClient(config: Partial<Keycloak.KeycloakConfig>): Client {
   }
   const mergedConfig: Keycloak.KeycloakConfig = {
     ...defaultOptions,
-    ...config,
+    ...config
   };
   const keycloak: Keycloak.KeycloakInstance = Keycloak(mergedConfig);
   const savedTokens = getSessionStorageTokens();
   let status: ClientStatusIds = ClientStatus.NONE;
-  let error: ClientError = undefined;
-  let initPromise: Promise<User | undefined> | undefined = undefined;
-  let user: User | undefined = undefined;
-  const listeners: Map<ClientEventIds, Set<EventListener>> = new Map();
+  let error: ClientError;
+  let initPromise: Promise<User | undefined> | undefined;
+  let user: User | undefined;
+  const { addListener, eventTrigger } = createEventHandling();
+  const isAuthenticated: Client['isAuthenticated'] = () =>
+    status === ClientStatus.AUTHORIZED;
+
+  const isInitialized: Client['isInitialized'] = () =>
+    status === ClientStatus.AUTHORIZED || status === ClientStatus.UNAUTHORIZED;
+
+  /*  
+  const eventTrigger = (
+    eventType: ClientEventIds,
+    payload?: EventPayload
+  ): void => {
+    const source = listeners.get(eventType);
+    if (source && source.size) {
+      source.forEach(listener => listener(client as Client, payload));
+    }
+  };
+  */
+
+  const setError: Client['setError'] = newError => {
+    const oldType = error && error.type;
+    const newType = newError && newError.type;
+    if (oldType === newType) {
+      return false;
+    }
+    error = newError;
+    if (newType) {
+      eventTrigger(ClientEvent.ERROR, error);
+    }
+    return true;
+  };
+
+  const setStatus: Client['setStatus'] = newStatus => {
+    if (newStatus === status) {
+      return false;
+    }
+    status = newStatus;
+    eventTrigger(ClientEvent.STATUS_CHANGE, status);
+    return true;
+  };
+
+  const getUser: Client['getUser'] = () => {
+    if (isAuthenticated()) {
+      const userData = keycloak.tokenParsed as Record<string, string | number>;
+      if (userData && userData.email && userData.session_state) {
+        return userData;
+      }
+    }
+    return undefined;
+  };
+
+  const onAuthChange = (authenticated: boolean): boolean => {
+    if (isInitialized() && authenticated === isAuthenticated()) {
+      return false;
+    }
+    const statusChanged = setStatus(
+      authenticated ? ClientStatus.AUTHORIZED : ClientStatus.UNAUTHORIZED
+    );
+    if (statusChanged) {
+      eventTrigger(status, getUser());
+    }
+    return true;
+  };
 
   const init: Client['init'] = () => {
     if (initPromise) {
@@ -120,24 +181,24 @@ export function getClient(config: Partial<Keycloak.KeycloakConfig>): Client {
         refreshToken: savedTokens.refreshToken,
         idToken: savedTokens.idToken,
         enableLogging: true,
-        silentCheckSsoRedirectUri: `${window.location.origin}/silent-check-sso.html`,
+        silentCheckSsoRedirectUri: `${window.location.origin}/silent-check-sso.html`
       });
 
       keyCloakPromise
-        .then(function(authenticated) {
+        .then((authenticated): void => {
           onAuthChange(authenticated);
           if (authenticated) {
             setSessionStorageTokens({
               token: keycloak.token,
               idToken: keycloak.idToken,
-              refreshToken: keycloak.refreshToken,
+              refreshToken: keycloak.refreshToken
             });
             resolve(keycloak.tokenParsed as User);
             return;
           }
           resolve(undefined);
         })
-        .catch(function() {
+        .catch(() => {
           onAuthChange(false);
           // error set in event listener
           reject();
@@ -146,26 +207,10 @@ export function getClient(config: Partial<Keycloak.KeycloakConfig>): Client {
     return initPromise;
   };
 
-  const isAuthenticated: Client['isAuthenticated'] = () =>
-    status === ClientStatus.AUTHORIZED;
-
-  const isInitialized: Client['isInitialized'] = () =>
-    status === ClientStatus.AUTHORIZED || status === ClientStatus.UNAUTHORIZED;
-
-  const getUser: Client['getUser'] = () => {
-    if (isAuthenticated()) {
-      const userData = keycloak.tokenParsed as Record<string, string | number>;
-      if (userData && userData.email && userData.session_state) {
-        return userData;
-      }
-    }
-    return undefined;
-  };
-
   const getOrLoadUser: Client['getOrLoadUser'] = () => {
-    const user = getUser();
-    if (user) {
-      return Promise.resolve(user);
+    const currentUser = getUser();
+    if (currentUser) {
+      return Promise.resolve(currentUser);
     }
     if (isInitialized()) {
       return Promise.resolve(undefined);
@@ -173,48 +218,38 @@ export function getClient(config: Partial<Keycloak.KeycloakConfig>): Client {
     return init();
   };
 
-  const addListener: Client['addListener'] = (eventType, listener) => {
+  /*  
+  const getListenerListForEventType = (
+    eventType: ClientEventIds
+  ): Set<EventListener> => {
     if (!listeners.has(eventType)) {
       listeners.set(eventType, new Set());
     }
-    const source = listeners.get(eventType);
-    source?.add(listener);
-    return () => {
-      const source = listeners.get(eventType);
-      source && source.delete(listener);
+    return listeners.get(eventType) as Set<EventListener>;
+  };
+
+  const addListener: Client['addListener'] = (eventType, listener) => {
+    const listenerList = getListenerListForEventType(eventType);
+    listenerList.add(listener);
+    return (): void => {
+      const targetList = listeners.get(eventType);
+      if (targetList) {
+        targetList.delete(listener);
+      }
     };
   };
-
-  const eventTrigger = (
-    eventType: ClientEventIds,
-    payload?: string | {} | boolean
-  ) => {
-    const source = listeners.get(eventType);
-    source &&
-      source.size &&
-      source.forEach(listener => listener(client as Client, payload));
-  };
-
-  const onAuthChange = (authenticated: boolean) => {
-    if (isInitialized() && authenticated === isAuthenticated()) {
-      return false;
-    }
-    const statusChanged = setStatus(
-      authenticated ? ClientStatus.AUTHORIZED : ClientStatus.UNAUTHORIZED
-    );
-    statusChanged && eventTrigger(status, getUser());
-  };
-
+  */
   const login: Client['login'] = () => {
     keycloak.login({
       redirectUri: 'http://localhost:3000/',
-      scope: 'ad-groups',
+      scope: 'ad-groups'
     });
   };
 
   const logout: Client['logout'] = () => {
+    eventTrigger(ClientEvent.LOGGING_OUT);
     keycloak.logout({
-      redirectUri: 'http://localhost:3000/',
+      redirectUri: 'http://localhost:3000/'
     });
   };
 
@@ -223,7 +258,7 @@ export function getClient(config: Partial<Keycloak.KeycloakConfig>): Client {
   };
 
   const handleCallback: Client['handleCallback'] = () => {
-    return Promise.reject('not supported with keycloak');
+    return Promise.reject(new Error('not supported with keycloak'));
   };
 
   const loadUserProfile: Client['loadUserProfile'] = () => {
@@ -238,7 +273,7 @@ export function getClient(config: Partial<Keycloak.KeycloakConfig>): Client {
           user = undefined;
           setError({
             type: ClientError.LOAD_ERROR,
-            message: e && e.toString(),
+            message: e && e.toString()
           });
           reject(e);
         });
@@ -253,28 +288,8 @@ export function getClient(config: Partial<Keycloak.KeycloakConfig>): Client {
     return status;
   };
 
-  const setStatus: Client['setStatus'] = newStatus => {
-    if (newStatus === status) {
-      return false;
-    }
-    status = newStatus;
-    eventTrigger(ClientEvent.STATUS_CHANGE, status);
-    return true;
-  };
-
   const getError: Client['getError'] = () => {
     return error;
-  };
-
-  const setError: Client['setError'] = newError => {
-    const oldType = error && error.type;
-    const newType = newError && newError.type;
-    if (oldType === newType) {
-      return false;
-    }
-    error = newError;
-    newType && eventTrigger(ClientEvent.ERROR, error);
-    return true;
   };
 
   client = {
@@ -293,74 +308,71 @@ export function getClient(config: Partial<Keycloak.KeycloakConfig>): Client {
     getStatus,
     setStatus,
     getError,
-    setError,
+    setError
   };
 
-  keycloak.onReady = authenticated => onAuthChange(!!authenticated);
-  keycloak.onAuthSuccess = () => onAuthChange(true);
-  keycloak.onAuthError = errorData => {
+  keycloak.onReady = (authenticated): boolean => onAuthChange(!!authenticated);
+  keycloak.onAuthSuccess = (): boolean => onAuthChange(true);
+  keycloak.onAuthError = (errorData): void => {
     onAuthChange(false);
     setError({
       type: ClientError.AUTH_ERROR,
-      message: errorData.error_description,
+      message: errorData.error_description
     });
   };
   // keycloak.onAuthRefreshSuccess = () => eventTrigger('onAuthRefreshSuccess');
-  keycloak.onAuthRefreshError = () => {
+  keycloak.onAuthRefreshError = (): void => {
     eventTrigger(ClientStatus.UNAUTHORIZED, { error: true });
     setError({
       type: ClientError.AUTH_REFRESH_ERROR,
-      message: '',
+      message: ''
     });
   };
-  keycloak.onAuthLogout = () => onAuthChange(false);
-  keycloak.onTokenExpired = () => eventTrigger(ClientEvent.USER_EXPIRED);
+  keycloak.onAuthLogout = (): boolean => onAuthChange(false);
+  keycloak.onTokenExpired = (): void => eventTrigger(ClientEvent.USER_EXPIRED);
 
   return client;
 }
 
 export const useKeycloak = (): Client => {
-  //return useOidc();
   const clientRef: React.Ref<Client> = useRef(getClient({}));
-  const client: Client = clientRef.current as Client;
-  const [, setStatus] = useState<ClientStatusIds>(client.getStatus());
+  const clientFromRef: Client = clientRef.current as Client;
+  const [, setStatus] = useState<ClientStatusIds>(clientFromRef.getStatus());
   useEffect(() => {
     const initClient = async (): Promise<void> => {
-      if (!client.isInitialized()) {
-        await client.getOrLoadUser().catch(e =>
-          client.setError({
+      if (!clientFromRef.isInitialized()) {
+        await clientFromRef.getOrLoadUser().catch(e =>
+          clientFromRef.setError({
             type: ClientError.INIT_ERROR,
-            message: e && e.toString(),
+            message: e && e.toString()
           })
         );
       }
-      setStatus(client.getStatus());
-      return;
     };
-    const statusListenerDisposer = client.addListener(
+    const statusListenerDisposer = clientFromRef.addListener(
       ClientEvent.STATUS_CHANGE,
-      (client, status) => {
-        setStatus(status);
+      status => {
+        setStatus(status as ClientStatusIds);
       }
     );
 
     initClient();
-    return () => {
+    return (): void => {
       statusListenerDisposer();
     };
-  }, [client]);
-  return client;
+  }, [clientFromRef]);
+  return clientFromRef;
 };
 
 export const useKeycloakErrorDetection = (): ClientError => {
   const clientRef: React.Ref<Client> = useRef(getClient({}));
-  const client: Client = clientRef.current as Client;
+  const clientFromRef: Client = clientRef.current as Client;
   const [error, setError] = useState<ClientError>(undefined);
   useEffect(() => {
     let isAuthorized = false;
-    const statusListenerDisposer = client.addListener(
+    const statusListenerDisposer = clientFromRef.addListener(
       ClientEvent.STATUS_CHANGE,
-      (client, status) => {
+      status => {
         if (status === ClientStatus.AUTHORIZED) {
           isAuthorized = true;
         }
@@ -371,17 +383,24 @@ export const useKeycloakErrorDetection = (): ClientError => {
       }
     );
 
-    const errorListenerDisposer = client.addListener(
+    const errorListenerDisposer = clientFromRef.addListener(
       ClientEvent.ERROR,
-      (client, newError) => {
-        setError(newError);
+      newError => {
+        setError(newError as ClientError);
+      }
+    );
+    const logoutListenerDisposer = clientFromRef.addListener(
+      ClientEvent.LOGGING_OUT,
+      (): void => {
+        isAuthorized = false;
       }
     );
 
-    return () => {
+    return (): void => {
       errorListenerDisposer();
       statusListenerDisposer();
+      logoutListenerDisposer();
     };
-  }, [client]);
+  }, [clientFromRef]);
   return error;
 };

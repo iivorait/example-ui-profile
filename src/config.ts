@@ -31,5 +31,5 @@ export default {
   identityProviderManagementUrlYle: defaultTo(
     process.env.REACT_APP_IPD_MANAGEMENT_URL_YLE,
     'https://tunnus.yle.fi/#omat-tiedot'
-  ),
+  )
 };

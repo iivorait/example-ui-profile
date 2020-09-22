@@ -7,7 +7,7 @@ import styles from './LanguageSwitcher.module.css';
 const languages = [
   { code: 'fi', label: 'Suomi' },
   { code: 'sv', label: 'Svenska' },
-  { code: 'en', label: 'English' },
+  { code: 'en', label: 'English' }
 ];
 
 type Props = {
@@ -15,9 +15,9 @@ type Props = {
   className?: string;
 };
 
-function LanguageSwitcher(props: Props) {
+function LanguageSwitcher(props: Props): React.ReactElement {
   const { i18n } = useTranslation();
-  const setLanguage = (code: string) => {
+  const setLanguage = (code: string): void => {
     i18n.changeLanguage(code);
     if (props.onLanguageChanged) {
       props.onLanguageChanged();
@@ -30,8 +30,7 @@ function LanguageSwitcher(props: Props) {
           <button
             type="button"
             lang={lang.code}
-            onClick={() => setLanguage(lang.code)}
-          >
+            onClick={(): void => setLanguage(lang.code)}>
             {lang.label}
           </button>
         </li>

@@ -6,22 +6,23 @@ import { useKeycloak } from '../clients/keycloak';
 
 type LanguageOption = { code: string; label: string };
 
-const Header = () => {
+const Header = (): React.ReactElement => {
   const languageOptions = [
     { code: 'fi', label: 'Suomi' },
     { code: 'sv', label: 'Svenska' },
-    { code: 'en', label: 'English' },
+    { code: 'en', label: 'English' }
   ];
-  /*const { i18n } = useTranslation();
+  /*
+  const { i18n } = useTranslation();
   const setLanguage = (code: string) => {
     i18n.changeLanguage(code);
-  };*/
+  };
+  */
   const keycloak = useKeycloak();
   const authenticated = keycloak.isAuthenticated();
   const initialized = keycloak.isInitialized();
   const user = keycloak.getUser();
 
-  console.log('Header: user initialized?', initialized, user);
   const [language, setLanguage] = useState(languageOptions[0]);
   const [active, setActive] = useState<'link' | 'button' | 'dropdown'>();
 
@@ -47,26 +48,25 @@ const Header = () => {
       logoLanguage={logoLanguage}
       menuCloseAriaLabel="Close menu"
       menuOpenAriaLabel="Open menu"
-      theme={'white'}
+      theme="white"
       title={title}
       titleUrl="https://hel.fi"
       skipTo="#content"
-      skipToContentLabel="Skip to main content"
-    >
+      skipToContentLabel="Skip to main content">
       {/* NAVIGATION ROW */}
-      <Navigation.Row display={'inline'}>
+      <Navigation.Row display="inline">
         <Navigation.Item
           active={active === 'link'}
           label="Link"
           tabIndex={0}
-          onClick={() => setActive('link')}
+          onClick={(): void => setActive('link')}
         />
         <Navigation.Item
           active={active === 'button'}
           as="button"
           label="Button"
           type="button"
-          onClick={() => setActive('button')}
+          onClick={(): void => setActive('button')}
         />
         <Navigation.Dropdown active={active === 'dropdown'} label="Dropdown">
           <Navigation.Item
@@ -77,7 +77,7 @@ const Header = () => {
           <Navigation.Item
             as="button"
             type="button"
-            onClick={() => setActive('dropdown')}
+            onClick={(): void => setActive('dropdown')}
             label="Make dropdown active"
           />
         </Navigation.Dropdown>
@@ -96,9 +96,8 @@ const Header = () => {
           <Navigation.User
             authenticated={authenticated}
             label="Sign in"
-            onSignIn={() => keycloak.login()}
-            userName={user ? `${user.given_name} ${user.family_name}` : ''}
-          >
+            onSignIn={(): void => keycloak.login()}
+            userName={user ? `${user.given_name} ${user.family_name}` : ''}>
             <Navigation.Item
               label="Your profile"
               href="https://hel.fi"
@@ -108,7 +107,7 @@ const Header = () => {
             <Navigation.Item
               as="button"
               type="button"
-              onClick={() => keycloak.logout()}
+              onClick={(): void => keycloak.logout()}
               variant="secondary"
               label="Sign out"
             />

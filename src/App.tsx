@@ -19,7 +19,7 @@ countries.registerLocale(sv);
 
 type Props = {};
 
-function App(props: Props) {
+function App(): React.ReactElement {
   return (
     <KeycloakProvider>
       <StoreProvider>

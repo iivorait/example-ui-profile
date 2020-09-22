@@ -1,59 +1,56 @@
+/* eslint-disable no-case-declarations */
 import { Reducer } from 'redux';
-
 import { ClientEvent, ClientStatus, Client } from '../index';
-import { StoreState } from './store';
+import { StoreState } from './index';
 import { CONNECTED_ACTION } from './actions';
 
-export const reducer: Reducer = (state, action): StoreState => {
-  console.log('reducer!', action.type);
+const reducer: Reducer = (state, action): StoreState => {
   switch (action.type) {
     case CONNECTED_ACTION:
       const client: Client = action.payload;
       const status = client.getStatus();
       const authenticated = client.isAuthenticated();
       const initialised = client.isInitialized();
-      return Object.assign(
-        {},
-        { ...state },
-        { user: null, status, authenticated, initialised }
-      );
+      return {
+        ...state,
+        user: null,
+        status,
+        authenticated,
+        initialised
+      };
     case ClientEvent.USER_EXPIRED:
-      return Object.assign(
-        {},
-        { ...state },
-        { user: null, status: ClientStatus.UNAUTHORIZED }
-      );
+      return {
+        ...state,
+        user: null,
+        status: ClientStatus.UNAUTHORIZED
+      };
     case ClientEvent.ERROR:
-      return Object.assign({}, { ...state });
+      return { ...state };
     case ClientEvent.UNAUTHORIZED:
-      return Object.assign(
-        {},
-        { ...state },
-        {
-          user: null,
-          status: ClientStatus.UNAUTHORIZED,
-          initialised: true,
-          authenticated: false,
-        }
-      );
+      return {
+        ...state,
+        user: null,
+        status: ClientStatus.UNAUTHORIZED,
+        initialised: true,
+        authenticated: false
+      };
     case ClientEvent.AUTHORIZED:
-      return Object.assign(
-        {},
-        { ...state },
-        {
-          user: action.payload,
-          status: ClientStatus.AUTHORIZED,
-          initialised: true,
-          authenticated: true,
-        }
-      );
+      return {
+        ...state,
+        user: action.payload,
+        status: ClientStatus.AUTHORIZED,
+        initialised: true,
+        authenticated: true
+      };
     case ClientEvent.INITIALIZING:
-      return Object.assign(
-        {},
-        { ...state },
-        { status: ClientStatus.INITIALIZING, initialised: false }
-      );
+      return {
+        ...state,
+        status: ClientStatus.INITIALIZING,
+        initialised: false
+      };
     default:
       return state;
   }
 };
+
+export default reducer;

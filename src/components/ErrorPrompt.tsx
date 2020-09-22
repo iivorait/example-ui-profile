@@ -5,7 +5,9 @@ import { useKeycloakErrorDetection } from '../clients/keycloak';
 import { ClientError } from '../clients';
 import styles from './styles.module.css';
 
-const ErrorPrompt = (props: React.PropsWithChildren<{}>) => {
+const ErrorPrompt = (
+  props: React.PropsWithChildren<{}>
+): React.ReactElement | null => {
   const [dismissedError, setDismissedError] = useState<ClientError>(undefined);
   const newError = useKeycloakErrorDetection();
   const lastErrorType = dismissedError && dismissedError.type;
@@ -15,23 +17,22 @@ const ErrorPrompt = (props: React.PropsWithChildren<{}>) => {
   }
   const sessionEndedElsewhere =
     newErrorType === ClientError.UNEXPECTED_AUTH_CHANGE;
-  const Prompt = () =>
+  const Prompt = (): React.ReactElement | null =>
     newError ? (
       <div className={styles['error-prompt-container']}>
         <div className={styles['error-prompt-content']}>
           <Notification
-            label={'Error'}
-            type={'error'}
-            onClose={() => setDismissedError(newError)}
+            label="Error"
+            type="error"
+            onClose={(): void => setDismissedError(newError)}
             dismissible
-            closeButtonLabelText={'Sulje'}
-          >
+            closeButtonLabelText="Sulje">
             {sessionEndedElsewhere
               ? `Käyttäjän sessio on päättynyt ilman uloskirjautumista tässä ikkunassa`
               : `Virhekoodi:${newErrorType}`}
           </Notification>
         </div>
-        <div className={styles['error-prompt-overlay']}></div>
+        <div className={styles['error-prompt-overlay']} />
       </div>
     ) : null;
 

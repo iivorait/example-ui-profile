@@ -8,7 +8,7 @@ import DemoWrapper from './DemoWrapper';
 type LoginProps = {
   client: Client;
 };
-const LoginComponent = ({ client }: LoginProps) => {
+const LoginComponent = ({ client }: LoginProps): React.ReactElement => {
   const { isInitialized, isAuthenticated, logout, login, getUser } = client;
   if (!isInitialized()) {
     return (
@@ -27,7 +27,7 @@ const LoginComponent = ({ client }: LoginProps) => {
         <div className={styles['content-element']}>
           <h3>Olet kirjautunut, {name}</h3>
           <div>
-            <Button translate={''} onClick={logout}>
+            <Button translate="" onClick={logout}>
               Kirjaudu ulos
             </Button>
           </div>
@@ -40,7 +40,7 @@ const LoginComponent = ({ client }: LoginProps) => {
       <div className={styles['content-element']}>
         <h3>Et ole kirjautunut</h3>
         <div>
-          <Button translate={''} onClick={login}>
+          <Button translate="" onClick={login}>
             Kirjaudu sisään
           </Button>
         </div>

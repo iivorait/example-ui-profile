@@ -12,23 +12,23 @@ i18n
   .init({
     fallbackLng: 'fi',
     interpolation: {
-      escapeValue: false,
+      escapeValue: false
     },
     resources: {
       en: {
-        translation: en,
+        translation: en
       },
       fi: {
-        translation: fi,
+        translation: fi
       },
       sv: {
-        translation: sv,
-      },
+        translation: sv
+      }
     },
     detection: {
       order: ['localStorage', 'cookie', 'navigator'],
-      caches: ['localStorage', 'cookie'],
-    },
+      caches: ['localStorage', 'cookie']
+    }
   });
 
 export default i18n;

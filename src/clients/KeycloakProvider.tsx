@@ -11,20 +11,13 @@ export interface KeycloakContextProps {
   readonly userManager: Client;
 }
 
-export const KeycloakProvider: FC<KeycloakProps> = ({
-  clientId,
-  realm,
-  url,
-  children,
-  ...props
-}) => {
+export const KeycloakProvider: FC<KeycloakProps> = ({ children }) => {
   const client = useKeycloak();
   return (
     <KeycloakContext.Provider
       value={{
-        userManager: client,
-      }}
-    >
+        userManager: client
+      }}>
       {children}
     </KeycloakContext.Provider>
   );

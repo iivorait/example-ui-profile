@@ -3,7 +3,7 @@ import React from 'react';
 import WithAuth, { WithAuthChildProps } from '../clients/WithAuth';
 import DemoWrapper from './DemoWrapper';
 
-const AuthComponent = (props: WithAuthChildProps) => {
+const AuthComponent = (props: WithAuthChildProps): React.ReactElement => {
   const user = props.client.getUser();
   return (
     <DemoWrapper title="Sisältö vain kirjatuneelle">
@@ -14,7 +14,9 @@ const AuthComponent = (props: WithAuthChildProps) => {
     </DemoWrapper>
   );
 };
-const UnAuthComponent = (props: WithAuthChildProps) => {
+const UnAuthComponent = (
+  props: WithAuthChildProps
+): React.ReactElement | null => {
   const initialized = props.client.isInitialized();
   return initialized ? (
     <DemoWrapper title="Sisältö kirjautumattomalle">
@@ -23,7 +25,7 @@ const UnAuthComponent = (props: WithAuthChildProps) => {
   ) : null;
 };
 
-const WithAuthDemo = () => {
+const WithAuthDemo = (): React.ReactElement | null => {
   return WithAuth(AuthComponent, UnAuthComponent);
 };
 

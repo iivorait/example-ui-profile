@@ -8,7 +8,7 @@ export type OidcCallbackProps = {
   failureRedirect: string;
 };
 
-const OidcCallback = (props: OidcCallbackProps) => {
+const OidcCallback = (props: OidcCallbackProps): React.ReactElement => {
   const client = useOidcCallback();
   const initialized = client.isInitialized();
   const authenticated = client.isAuthenticated();

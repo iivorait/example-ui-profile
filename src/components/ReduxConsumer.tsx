@@ -2,11 +2,11 @@ import React from 'react';
 import { useSelector } from 'react-redux';
 
 import styles from './styles.module.css';
-import { StoreState } from '../clients/redux/store';
+import { StoreState } from '../clients/redux/index';
 import DemoWrapper from './DemoWrapper';
 
-const ReduxConsumer = () => {
-  const state: StoreState = useSelector((state: StoreState) => state);
+const ReduxConsumer = (): React.ReactElement => {
+  const state: StoreState = useSelector((storeState: StoreState) => storeState);
   const { initialised, authenticated, user } = state;
   if (!initialised) {
     return (
