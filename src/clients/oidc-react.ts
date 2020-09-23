@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from 'react';
-import Oidc, {
+import {
   UserManager,
   UserManagerSettings,
   WebStorageStateStore,
@@ -13,53 +13,9 @@ import {
   User as ClientUser,
   ClientEvent,
   ClientError,
-  createEventHandling
+  createClient,
+  ClientFactory
 } from './index';
-
-export interface KeycloakProps {
-  /**
-   * realm to true
-   */
-  realm?: string;
-  /**
-   * realm to true
-   */
-  url?: string;
-  /**
-   * The URL of the OIDC/OAuth2 provider.
-   */
-  authority?: string;
-  /**
-   * Your client application's identifier as registered with the OIDC/OAuth2 provider.
-   */
-  clientId?: string;
-  /**
-   * Client secret defined on the identity server
-   */
-  clientSecret?: string;
-  /**
-   * The redirect URI of your client application to receive a response from the OIDC/OAuth2 provider.
-   */
-  redirectUri?: string;
-  /**
-   * Tells the authorization server which grant to execute
-   *
-   * Read more: https://tools.ietf.org/html/rfc6749#section-3.1.1
-   */
-  responseType?: string;
-  /**
-   * A space-delimited list of permissions that the application requires.
-   */
-  scope?: string;
-  /**
-   * Defaults to `windows.location`.
-   */
-  location?: Location;
-  /**
-   * defaults to true
-   */
-  autoSignIn?: boolean;
-}
 
 const location = window.location.origin;
 
@@ -80,6 +36,40 @@ const defaultOptions: UserManagerSettings = {
 
 let client: Client | null = null;
 
+function oidcUserToClientUser(user: User): ClientUser {
+  return (user as unknown) as ClientUser;
+}
+
+function bindEvents(
+  manager: UserManager,
+  eventFunctions: {
+    onAuthChange: ClientFactory['onAuthChange'];
+    setError: ClientFactory['setError'];
+    eventTrigger: ClientFactory['eventTrigger'];
+  }
+): void {
+  const { onAuthChange, setError, eventTrigger } = eventFunctions;
+  manager.events.addUserUnloaded((): boolean => onAuthChange(false));
+  manager.events.addUserSignedOut((): boolean => {
+    return onAuthChange(false);
+  });
+  manager.events.addUserSessionChanged((): boolean => onAuthChange(false));
+  manager.events.addSilentRenewError((renewError?: {}): void => {
+    const errorObj = renewError
+      ? ((renewError as unknown) as Error)
+      : undefined;
+    const message = errorObj ? errorObj.message : '';
+    eventTrigger(ClientStatus.UNAUTHORIZED, { error: message });
+    setError({
+      type: ClientError.AUTH_REFRESH_ERROR,
+      message
+    });
+  });
+  manager.events.addAccessTokenExpired((): void =>
+    eventTrigger(ClientEvent.USER_EXPIRED)
+  );
+}
+
 export function getClient(config: Partial<UserManagerSettings>): Client {
   if (client) {
     return client;
@@ -88,32 +78,25 @@ export function getClient(config: Partial<UserManagerSettings>): Client {
     ...defaultOptions,
     ...config
   };
-  // Oidc.Log.logger = console;
-  Oidc.Log.level = 4;
   const manager = new UserManager(mergedConfig);
-  let status: ClientStatusIds = ClientStatus.NONE;
-  let error: ClientError;
-  let initPromise: Promise<ClientUser | undefined> | undefined;
-  let user: User | undefined;
-  const { addListener, eventTrigger } = createEventHandling();
+  const {
+    eventTrigger,
+    getStoredUser,
+    setStoredUser,
+    ...clientFunctions
+  } = createClient();
 
-  const isAuthenticated: Client['isAuthenticated'] = () =>
-    status === ClientStatus.AUTHORIZED;
-
-  const isInitialized: Client['isInitialized'] = () =>
-    status === ClientStatus.AUTHORIZED || status === ClientStatus.UNAUTHORIZED;
-
-  const setStatus: Client['setStatus'] = newStatus => {
-    if (newStatus === status) {
-      return false;
-    }
-    status = newStatus;
-    eventTrigger(ClientEvent.STATUS_CHANGE, status);
-    return true;
-  };
+  const {
+    isAuthenticated,
+    isInitialized,
+    setStatus,
+    getStatus,
+    setError
+  } = clientFunctions;
 
   const getUser: Client['getUser'] = () => {
     if (isAuthenticated()) {
+      const user = (getStoredUser() as unknown) as User;
       const userData = user && user.profile;
       if (userData && userData.email && userData.session_state) {
         return userData;
@@ -130,38 +113,27 @@ export function getClient(config: Partial<UserManagerSettings>): Client {
       authenticated ? ClientStatus.AUTHORIZED : ClientStatus.UNAUTHORIZED
     );
     if (statusChanged) {
-      eventTrigger(status, getUser());
+      eventTrigger(getStatus(), getUser());
     }
     return true;
   };
 
-  const setError: Client['setError'] = newError => {
-    const oldType = error && error.type;
-    const newType = newError && newError.type;
-    if (oldType === newType) {
-      return false;
-    }
-    error = newError;
-    if (newType) {
-      eventTrigger(ClientEvent.ERROR, error);
-    }
-    return true;
-  };
-
+  let initPromise: Promise<ClientUser | undefined> | undefined;
   const init: Client['init'] = () => {
     if (initPromise) {
       return initPromise;
     }
-    status = ClientStatus.INITIALIZING;
+    setStatus(ClientStatus.INITIALIZING);
     initPromise = new Promise((resolve, reject) => {
       manager
         .signinSilent()
         .then((loadedUser: User) => {
           const authenticated = !!loadedUser;
           if (authenticated) {
-            user = loadedUser;
+            const oidcUserAsClientUser = oidcUserToClientUser(loadedUser);
+            setStoredUser(oidcUserAsClientUser);
             onAuthChange(true);
-            resolve((loadedUser as unknown) as ClientUser);
+            resolve(oidcUserAsClientUser);
             return;
           }
           onAuthChange(false);
@@ -195,31 +167,6 @@ export function getClient(config: Partial<UserManagerSettings>): Client {
     return init();
   };
 
-  /*
-  const addListener: Client['addListener'] = (eventType, listener) => {
-    if (!listeners.has(eventType)) {
-      listeners.set(eventType, new Set());
-    }
-    const source = listeners.get(eventType);
-    source?.add(listener);
-    return () => {
-      const source = listeners.get(eventType);
-      source && source.delete(listener);
-    };
-  };
-
-  const eventTrigger = (
-    eventType: ClientEventIds,
-    payload?: string | {} | boolean
-  ) => {
-    // console.log('eventTrigger', eventType);
-    const source = listeners.get(eventType);
-    source &&
-      source.size &&
-      source.forEach(listener => listener(client as Client, payload));
-  };
-  */
-
   const login: Client['login'] = () => {
     manager.signinRedirect();
   };
@@ -236,10 +183,13 @@ export function getClient(config: Partial<UserManagerSettings>): Client {
       setStatus(ClientStatus.INITIALIZING);
       manager
         .signinRedirectCallback()
-        .then((e: User | undefined) => {
-          user = e;
+        .then((loadedUser: User | undefined) => {
+          const oidcUserAsClientUser = loadedUser
+            ? oidcUserToClientUser(loadedUser)
+            : undefined;
+          setStoredUser(oidcUserAsClientUser);
           onAuthChange(true);
-          resolve((e as unknown) as ClientUser);
+          resolve(oidcUserAsClientUser);
         })
         .catch(e => {
           setError({
@@ -256,12 +206,15 @@ export function getClient(config: Partial<UserManagerSettings>): Client {
     return new Promise((resolve, reject) => {
       manager
         .getUser()
-        .then(data => {
-          user = data || undefined;
-          resolve(user ? ((user as unknown) as ClientUser) : undefined);
+        .then(loadedUser => {
+          const oidcUserAsClientUser = loadedUser
+            ? oidcUserToClientUser(loadedUser)
+            : undefined;
+          setStoredUser(oidcUserAsClientUser);
+          resolve(oidcUserAsClientUser);
         })
         .catch(e => {
-          user = undefined;
+          setStoredUser(undefined);
           setError({
             type: ClientError.LOAD_ERROR,
             message: e && e.toString()
@@ -272,60 +225,22 @@ export function getClient(config: Partial<UserManagerSettings>): Client {
   };
 
   const getUserProfile: Client['getUserProfile'] = () => {
-    return user ? ((user as unknown) as ClientUser) : undefined;
-  };
-
-  const getStatus: Client['getStatus'] = () => {
-    return status;
-  };
-
-  const getError: Client['getError'] = () => {
-    return error;
+    return getStoredUser();
   };
 
   client = {
     init,
     login,
     logout,
-    isAuthenticated,
-    isInitialized,
-    addListener,
-    clearSession,
-    handleCallback,
-    getUser,
-    getOrLoadUser,
     loadUserProfile,
     getUserProfile,
-    getStatus,
-    setStatus,
-    getError,
-    setError
+    getUser,
+    clearSession,
+    handleCallback,
+    getOrLoadUser,
+    ...clientFunctions
   };
-
-  // manager.events.onReady = authenticated => onAuthChange();
-  // manager.events.onAuthRefreshSuccess = () => eventTrigger('onAuthRefreshSuccess');
-  // manager.events.addAccessTokenExpiring
-  // manager.events.addUserLoaded = () => onAuthChange(true);
-  manager.events.addUserUnloaded((): boolean => onAuthChange(false));
-  manager.events.addUserSignedOut((): boolean => {
-    return onAuthChange(false);
-  });
-  manager.events.addUserSessionChanged((): boolean => onAuthChange(false));
-  manager.events.addSilentRenewError((renewError?: {}): void => {
-    const errorObj = renewError
-      ? ((renewError as unknown) as Error)
-      : undefined;
-    const message = errorObj ? errorObj.message : '';
-    eventTrigger(ClientStatus.UNAUTHORIZED, { error: message });
-    setError({
-      type: ClientError.AUTH_REFRESH_ERROR,
-      message
-    });
-  });
-  manager.events.addAccessTokenExpired((): void =>
-    eventTrigger(ClientEvent.USER_EXPIRED)
-  );
-
+  bindEvents(manager, { onAuthChange, eventTrigger, setError });
   return client;
 }
 

@@ -1,5 +1,6 @@
 import { useEffect, useState, useRef } from 'react';
 import Keycloak from 'keycloak-js';
+import config from '../config';
 
 import {
   Client,
@@ -8,59 +9,17 @@ import {
   User,
   ClientEvent,
   ClientError,
-  createEventHandling
+  createClient,
+  ClientFactory
 } from './index';
 
-export interface KeycloakProps {
-  /**
-   * realm to true
-   */
-  realm?: string;
-  /**
-   * realm to true
-   */
-  url?: string;
-  /**
-   * The URL of the OIDC/OAuth2 provider.
-   */
-  authority?: string;
-  /**
-   * Your client application's identifier as registered with the OIDC/OAuth2 provider.
-   */
-  clientId?: string;
-  /**
-   * Client secret defined on the identity server
-   */
-  clientSecret?: string;
-  /**
-   * The redirect URI of your client application to receive a response from the OIDC/OAuth2 provider.
-   */
-  redirectUri?: string;
-  /**
-   * Tells the authorization server which grant to execute
-   *
-   * Read more: https://tools.ietf.org/html/rfc6749#section-3.1.1
-   */
-  responseType?: string;
-  /**
-   * A space-delimited list of permissions that the application requires.
-   */
-  scope?: string;
-  /**
-   * Defaults to `windows.location`.
-   */
-  location?: Location;
-  /**
-   * defaults to true
-   */
-  autoSignIn?: boolean;
-}
-
+/*
 const defaultOptions: Keycloak.KeycloakConfig = {
   url: 'https://tunnistus.hel.ninja/auth',
   realm: 'helsinki-tunnistus',
   clientId: 'https://api.hel.fi/auth/example-ui-profile'
 };
+*/
 
 function setSessionStorageTokens({
   token,
@@ -90,64 +49,70 @@ function getSessionStorageTokens(): {
 
 let client: Client | null = null;
 
-export function getClient(config: Partial<Keycloak.KeycloakConfig>): Client {
+function bindEvents(
+  keycloak: Keycloak.KeycloakInstance,
+  eventFunctions: {
+    onAuthChange: ClientFactory['onAuthChange'];
+    setError: ClientFactory['setError'];
+    eventTrigger: ClientFactory['eventTrigger'];
+  }
+): void {
+  const { onAuthChange, setError, eventTrigger } = eventFunctions;
+  /* eslint-disable no-param-reassign */
+  keycloak.onReady = (authenticated): boolean => onAuthChange(!!authenticated);
+  keycloak.onAuthSuccess = (): boolean => onAuthChange(true);
+  keycloak.onAuthError = (errorData): void => {
+    onAuthChange(false);
+    setError({
+      type: ClientError.AUTH_ERROR,
+      message: errorData.error_description
+    });
+  };
+  keycloak.onAuthRefreshError = (): void => {
+    eventTrigger(ClientStatus.UNAUTHORIZED, { error: true });
+    setError({
+      type: ClientError.AUTH_REFRESH_ERROR,
+      message: ''
+    });
+  };
+  keycloak.onAuthLogout = (): boolean => onAuthChange(false);
+  keycloak.onTokenExpired = (): void => eventTrigger(ClientEvent.USER_EXPIRED);
+  /* eslint-enable no-param-reassign */
+}
+
+export function getClient(
+  configOverrides: Partial<Keycloak.KeycloakConfig>
+): Client {
   if (client) {
     return client;
   }
   const mergedConfig: Keycloak.KeycloakConfig = {
-    ...defaultOptions,
-    ...config
+    url: config.client.url,
+    realm: config.client.realm,
+    clientId: config.client.clientId,
+    ...configOverrides
   };
+  console.log('config is', config);
   const keycloak: Keycloak.KeycloakInstance = Keycloak(mergedConfig);
   const savedTokens = getSessionStorageTokens();
-  let status: ClientStatusIds = ClientStatus.NONE;
-  let error: ClientError;
-  let initPromise: Promise<User | undefined> | undefined;
-  let user: User | undefined;
-  const { addListener, eventTrigger } = createEventHandling();
-  const isAuthenticated: Client['isAuthenticated'] = () =>
-    status === ClientStatus.AUTHORIZED;
+  const {
+    eventTrigger,
+    getStoredUser,
+    setStoredUser,
+    ...clientFunctions
+  } = createClient();
 
-  const isInitialized: Client['isInitialized'] = () =>
-    status === ClientStatus.AUTHORIZED || status === ClientStatus.UNAUTHORIZED;
-
-  /*  
-  const eventTrigger = (
-    eventType: ClientEventIds,
-    payload?: EventPayload
-  ): void => {
-    const source = listeners.get(eventType);
-    if (source && source.size) {
-      source.forEach(listener => listener(client as Client, payload));
-    }
-  };
-  */
-
-  const setError: Client['setError'] = newError => {
-    const oldType = error && error.type;
-    const newType = newError && newError.type;
-    if (oldType === newType) {
-      return false;
-    }
-    error = newError;
-    if (newType) {
-      eventTrigger(ClientEvent.ERROR, error);
-    }
-    return true;
-  };
-
-  const setStatus: Client['setStatus'] = newStatus => {
-    if (newStatus === status) {
-      return false;
-    }
-    status = newStatus;
-    eventTrigger(ClientEvent.STATUS_CHANGE, status);
-    return true;
-  };
+  const {
+    isAuthenticated,
+    isInitialized,
+    setStatus,
+    getStatus,
+    setError
+  } = clientFunctions;
 
   const getUser: Client['getUser'] = () => {
     if (isAuthenticated()) {
-      const userData = keycloak.tokenParsed as Record<string, string | number>;
+      const userData = keycloak.tokenParsed as User;
       if (userData && userData.email && userData.session_state) {
         return userData;
       }
@@ -163,25 +128,74 @@ export function getClient(config: Partial<Keycloak.KeycloakConfig>): Client {
       authenticated ? ClientStatus.AUTHORIZED : ClientStatus.UNAUTHORIZED
     );
     if (statusChanged) {
-      eventTrigger(status, getUser());
+      eventTrigger(getStatus(), getUser());
     }
     return true;
   };
+
+  const login: Client['login'] = () => {
+    keycloak.login({
+      redirectUri: config.getLocationBasedUri('/'), // todo redirect back to page login was initiated
+      scope: config.client.scope
+    });
+  };
+
+  const logout: Client['logout'] = () => {
+    eventTrigger(ClientEvent.LOGGING_OUT);
+    keycloak.logout({
+      redirectUri: config.getLocationBasedUri('/')
+    });
+  };
+
+  const clearSession: Client['clearSession'] = () => {
+    setSessionStorageTokens({ token: '', refreshToken: '', idToken: '' });
+  };
+
+  const handleCallback: Client['handleCallback'] = () => {
+    return Promise.reject(new Error('not supported with keycloak'));
+  };
+
+  const loadUserProfile: Client['loadUserProfile'] = () => {
+    return new Promise((resolve, reject) => {
+      keycloak
+        .loadUserProfile()
+        .then(data => {
+          setStoredUser(data as User);
+          resolve(getStoredUser());
+        })
+        .catch(e => {
+          setStoredUser(undefined);
+          setError({
+            type: ClientError.LOAD_ERROR,
+            message: e && e.toString()
+          });
+          reject(e);
+        });
+    });
+  };
+
+  const getUserProfile: Client['getUserProfile'] = () => {
+    return getStoredUser();
+  };
+
+  let initPromise: Promise<User | undefined> | undefined;
 
   const init: Client['init'] = () => {
     if (initPromise) {
       return initPromise;
     }
-    status = ClientStatus.INITIALIZING;
+    setStatus(ClientStatus.INITIALIZING);
     initPromise = new Promise((resolve, reject) => {
       const keyCloakPromise = keycloak.init({
-        onLoad: 'check-sso',
-        flow: 'hybrid',
+        onLoad: config.client.loginType,
+        flow: config.client.flow,
         token: savedTokens.token,
         refreshToken: savedTokens.refreshToken,
         idToken: savedTokens.idToken,
         enableLogging: true,
-        silentCheckSsoRedirectUri: `${window.location.origin}/silent-check-sso.html`
+        silentCheckSsoRedirectUri: config.getLocationBasedUri(
+          '/silent-check-sso.html'
+        )
       });
 
       keyCloakPromise
@@ -200,7 +214,6 @@ export function getClient(config: Partial<Keycloak.KeycloakConfig>): Client {
         })
         .catch(() => {
           onAuthChange(false);
-          // error set in event listener
           reject();
         });
     });
@@ -218,119 +231,19 @@ export function getClient(config: Partial<Keycloak.KeycloakConfig>): Client {
     return init();
   };
 
-  /*  
-  const getListenerListForEventType = (
-    eventType: ClientEventIds
-  ): Set<EventListener> => {
-    if (!listeners.has(eventType)) {
-      listeners.set(eventType, new Set());
-    }
-    return listeners.get(eventType) as Set<EventListener>;
-  };
-
-  const addListener: Client['addListener'] = (eventType, listener) => {
-    const listenerList = getListenerListForEventType(eventType);
-    listenerList.add(listener);
-    return (): void => {
-      const targetList = listeners.get(eventType);
-      if (targetList) {
-        targetList.delete(listener);
-      }
-    };
-  };
-  */
-  const login: Client['login'] = () => {
-    keycloak.login({
-      redirectUri: 'http://localhost:3000/',
-      scope: 'ad-groups'
-    });
-  };
-
-  const logout: Client['logout'] = () => {
-    eventTrigger(ClientEvent.LOGGING_OUT);
-    keycloak.logout({
-      redirectUri: 'http://localhost:3000/'
-    });
-  };
-
-  const clearSession: Client['clearSession'] = () => {
-    setSessionStorageTokens({ token: '', refreshToken: '', idToken: '' });
-  };
-
-  const handleCallback: Client['handleCallback'] = () => {
-    return Promise.reject(new Error('not supported with keycloak'));
-  };
-
-  const loadUserProfile: Client['loadUserProfile'] = () => {
-    return new Promise((resolve, reject) => {
-      keycloak
-        .loadUserProfile()
-        .then(data => {
-          user = data as User;
-          resolve(user);
-        })
-        .catch(e => {
-          user = undefined;
-          setError({
-            type: ClientError.LOAD_ERROR,
-            message: e && e.toString()
-          });
-          reject(e);
-        });
-    });
-  };
-
-  const getUserProfile: Client['getUserProfile'] = () => {
-    return user;
-  };
-
-  const getStatus: Client['getStatus'] = () => {
-    return status;
-  };
-
-  const getError: Client['getError'] = () => {
-    return error;
-  };
-
   client = {
     init,
     login,
     logout,
-    isAuthenticated,
-    isInitialized,
-    addListener,
-    clearSession,
-    handleCallback,
-    getUser,
-    getOrLoadUser,
     loadUserProfile,
     getUserProfile,
-    getStatus,
-    setStatus,
-    getError,
-    setError
+    getUser,
+    clearSession,
+    handleCallback,
+    getOrLoadUser,
+    ...clientFunctions
   };
-
-  keycloak.onReady = (authenticated): boolean => onAuthChange(!!authenticated);
-  keycloak.onAuthSuccess = (): boolean => onAuthChange(true);
-  keycloak.onAuthError = (errorData): void => {
-    onAuthChange(false);
-    setError({
-      type: ClientError.AUTH_ERROR,
-      message: errorData.error_description
-    });
-  };
-  // keycloak.onAuthRefreshSuccess = () => eventTrigger('onAuthRefreshSuccess');
-  keycloak.onAuthRefreshError = (): void => {
-    eventTrigger(ClientStatus.UNAUTHORIZED, { error: true });
-    setError({
-      type: ClientError.AUTH_REFRESH_ERROR,
-      message: ''
-    });
-  };
-  keycloak.onAuthLogout = (): boolean => onAuthChange(false);
-  keycloak.onTokenExpired = (): void => eventTrigger(ClientEvent.USER_EXPIRED);
-
+  bindEvents(keycloak, { onAuthChange, eventTrigger, setError });
   return client;
 }
 

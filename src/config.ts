@@ -1,35 +1,50 @@
-import defaultTo from 'lodash/defaultTo';
+import { ClientProps } from './clients/index';
+
+function envValueToBoolean(
+  value: string | undefined,
+  defaultValue: boolean
+): boolean {
+  const strValue = String(value).toLowerCase();
+  if (value === '' || strValue === 'false' || strValue === '0') {
+    return false;
+  }
+  if (strValue === 'true' || strValue === '1') {
+    return true;
+  }
+  return defaultValue;
+}
+
+const clientConfig: ClientProps = {
+  realm: String(process.env.REACT_APP_OIDC_REALM),
+  url: String(process.env.REACT_APP_OIDC_URL),
+  authority: `${process.env.REACT_APP_OIDC_URL}/realms/${process.env.REACT_APP_OIDC_REALM}`,
+  clientId: String(process.env.REACT_APP_OIDC_CLIENT_ID),
+  callbackPath: process.env.REACT_APP_OIDC_CALLBACK_PATH || undefined,
+  logoutPath: process.env.REACT_APP_OIDC_LOGOUT_PATH || '/',
+  silentAuthPath: process.env.REACT_APP_OIDC_SILENT_AUTH_PATH,
+  responseType: process.env.REACT_APP_OIDC_RESPONSE_TYPE || 'id_token token',
+  scope: process.env.REACT_APP_OIDC_SCOPE || 'openid',
+  autoSignIn: envValueToBoolean(process.env.REACT_APP_OIDC_AUTO_SIGN_IN, true),
+  automaticSilentRenew: envValueToBoolean(
+    process.env.REACT_APP_OIDC_AUTO_SILENT_RENEW,
+    true
+  ),
+  enableLogging: envValueToBoolean(process.env.REACT_APP_OIDC_LOGGING, false),
+  loginType:
+    (process.env.REACT_APP_OIDC_LOGIN_TYPE as ClientProps['loginType']) ||
+    'check-sso',
+  flow: (process.env.REACT_APP_OIDC_FLOW as ClientProps['flow']) || 'hybrid'
+};
+
+function getLocationBasedUri(property: string | undefined): string | undefined {
+  const location = window.location.origin;
+  if (property === undefined) {
+    return undefined;
+  }
+  return `${location}${property}`;
+}
 
 export default {
-  clientId: process.env.REACT_APP_OIDC_CLIENT_ID,
-  environment: process.env.REACT_APP_ENVIRONMENT,
-  helsinkiAccountAMR: defaultTo(
-    process.env.REACT_APP_HELSINKI_ACCOUNT_AMR,
-    'helusername'
-  ),
-  oidcAuthority: process.env.REACT_APP_OIDC_AUTHORITY,
-  oidcScope: process.env.REACT_APP_OIDC_SCOPE,
-  profileAudience: process.env.REACT_APP_PROFILE_AUDIENCE,
-  profileGraphQl: process.env.REACT_APP_PROFILE_GRAPHQL,
-  sentryDsn: process.env.REACT_APP_SENTRY_DSN,
-  identityProviderManagementUrlHelsinki: defaultTo(
-    process.env.REACT_APP_IPD_MANAGEMENT_URL_HELSINKI_ACCOUNT,
-    'https://salasana.hel.ninja/auth/realms/helsinki-salasana/account'
-  ),
-  identityProviderManagementUrlGithub: defaultTo(
-    process.env.REACT_APP_IPD_MANAGEMENT_URL_GITHUB,
-    'https://github.com/settings/profile'
-  ),
-  identityProviderManagementUrlGoogle: defaultTo(
-    process.env.REACT_APP_IPD_MANAGEMENT_URL_GOOGLE,
-    'https://myaccount.google.com'
-  ),
-  identityProviderManagementUrlFacebook: defaultTo(
-    process.env.REACT_APP_IPD_MANAGEMENT_URL_FACEBOOK,
-    'http://facebook.com/settings'
-  ),
-  identityProviderManagementUrlYle: defaultTo(
-    process.env.REACT_APP_IPD_MANAGEMENT_URL_YLE,
-    'https://tunnus.yle.fi/#omat-tiedot'
-  )
+  client: clientConfig,
+  getLocationBasedUri
 };

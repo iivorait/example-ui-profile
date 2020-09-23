@@ -56,20 +56,73 @@ export const ClientError = {
 
 export type ClientError = { type: string; message: string } | undefined;
 
-/* common client functions */
-
-export const getOrLoadUser = (
-  client: Client
-): Promise<User | undefined | null> => {
-  const user = client.getUser();
-  if (user) {
-    return Promise.resolve(user);
-  }
-  if (client.isInitialized()) {
-    return Promise.resolve(undefined);
-  }
-  return client.init();
-};
+export interface ClientProps {
+  /**
+   * realm for the OIDC/OAuth2 endpoint
+   */
+  realm: string;
+  /**
+   * The URL of the OIDC/OAuth2 endpoint
+   */
+  url: string;
+  /**
+   * authority for the OIDC/OAuth2. Not configurable, value is props.url+'/realms/'+props.realm
+   */
+  authority: string;
+  /**
+   * Your client application's identifier as registered with the OIDC/OAuth2 provider.
+   */
+  clientId: string;
+  /**
+   * The redirect URI of your client application to receive a response from the OIDC/OAuth2 provider.
+   * Not needed for keycloak client. Only for oidc-react.
+   * Default: undefined
+   */
+  callbackPath: string | undefined;
+  /**
+   * The redirect URI of your client application after logout
+   * Default: '/'
+   */
+  logoutPath?: string;
+  /**
+   * The path for silent authentication checks: silent renew (oidc-react) or silent sso check (keycloak)
+   */
+  silentAuthPath?: string;
+  /**
+   * The type of response desired from the OIDC/OAuth2 provider.
+   * Default: 'id_token token'
+   */
+  responseType?: string;
+  /**
+   * The scope being requested from the OIDC/OAuth2 provider.
+   * Default: 'openid'
+   */
+  scope?: string;
+  /**
+   * Default: true
+   */
+  autoSignIn?: boolean;
+  /**
+   * Default: true
+   */
+  automaticSilentRenew?: boolean;
+  /**
+   * Default: false
+   */
+  enableLogging?: boolean;
+  /**
+   * Specifies an action to do on load. Supported values are login-required or check-sso.
+   * Only for keycloak client.
+   * Default: 'check-sso'
+   */
+  loginType: 'check-sso' | 'login-required' | undefined;
+  /**
+   * Set the OpenID Connect flow. Valid values are standard, implicit or hybrid.
+   * Only for keycloak client.
+   * Default: 'hybrid'
+   */
+  flow: 'standard' | 'implicit' | 'hybrid' | undefined;
+}
 
 type EventHandlers = {
   addListener: Client['addListener'];
@@ -109,5 +162,86 @@ export const createEventHandling = (): EventHandlers => {
   return {
     addListener,
     eventTrigger
+  };
+};
+
+export type ClientFactory = {
+  addListener: Client['addListener'];
+  eventTrigger: EventHandlers['eventTrigger'];
+  getStoredUser: () => User | undefined;
+  setStoredUser: (newUser: User | undefined) => void;
+  onAuthChange: (authenticated: boolean) => boolean;
+  getStatus: Client['getStatus'];
+  setStatus: Client['setStatus'];
+  getError: Client['getError'];
+  setError: Client['setError'];
+  isInitialized: Client['isInitialized'];
+  isAuthenticated: Client['isAuthenticated'];
+} & EventHandlers;
+
+export const createClient = (): ClientFactory => {
+  let status: ClientStatusIds = ClientStatus.NONE;
+  let error: ClientError;
+  let user: User | undefined;
+  const { addListener, eventTrigger } = createEventHandling();
+
+  const getStoredUser = (): User | undefined => {
+    return user;
+  };
+
+  const setStoredUser = (newUser: User | undefined): void => {
+    user = newUser;
+  };
+
+  const getStatus: Client['getStatus'] = () => {
+    return status;
+  };
+
+  const getError: Client['getError'] = () => {
+    return error;
+  };
+
+  const isAuthenticated: Client['isAuthenticated'] = () =>
+    status === ClientStatus.AUTHORIZED;
+
+  const isInitialized: Client['isInitialized'] = () =>
+    status === ClientStatus.AUTHORIZED || status === ClientStatus.UNAUTHORIZED;
+
+  const setError: Client['setError'] = newError => {
+    const oldType = error && error.type;
+    const newType = newError && newError.type;
+    if (oldType === newType) {
+      return false;
+    }
+    error = newError;
+    if (newType) {
+      eventTrigger(ClientEvent.ERROR, error);
+    }
+    return true;
+  };
+
+  const setStatus: Client['setStatus'] = newStatus => {
+    if (newStatus === status) {
+      return false;
+    }
+    status = newStatus;
+    eventTrigger(ClientEvent.STATUS_CHANGE, status);
+    return true;
+  };
+
+  const onAuthChange: ClientFactory['onAuthChange'] = auth => auth;
+
+  return {
+    addListener,
+    eventTrigger,
+    getStatus,
+    getError,
+    getStoredUser,
+    setStoredUser,
+    setStatus,
+    setError,
+    isInitialized,
+    isAuthenticated,
+    onAuthChange
   };
 };
