@@ -13,8 +13,26 @@ Clients dispatch events and trigger changes which then trigger re-rendering of t
 
 
 ## Config
-.env files are not used at the moment! Change server endpoint in "src/clients/keycloak.ts
+use .env -files. Some values are client specific. Default client is keycloak and relevant settings are:
+REACT_APP_OIDC_URL="https://tunnistus.hel.ninja/auth"
+REACT_APP_OIDC_REALM="helsinki-tunnistus"
+REACT_APP_OIDC_CLIENT_ID="https://api.hel.fi/auth/example-ui-profile"
+
+other settings should not be changed
+
+Starting server with temporary environment variables:
+REACT_APP_OIDC_URL=https://foo.bar yarn start
 
 ## Docker
 
 Run `docker-compose up`
+
+Starting docker with temporary environment variables:
+Open docker-compose.yml and add new new 'environment' under services/app.
+
+Example:
+
+services:
+  app:
+    environment: 
+      - REACT_APP_OIDC_URL=https://foo.bar 

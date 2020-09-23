@@ -5,12 +5,13 @@ import LoginComponent from '../components/Login';
 import PageContent from '../components/PageContent';
 import ReduxConsumer from '../components/ReduxConsumer';
 import WithAuthDemo from '../components/WithAuthDemo';
+import KeycloakConsumer from '../components/KeycloakConsumer';
 
 const IndexPage = (): React.ReactElement => {
   const keycloak = useContext(KeycloakContext);
   return (
     <PageContent>
-      {!!keycloak && keycloak.userManager ? (
+      {!!keycloak && keycloak.client ? (
         <>
           <h1>Keycloak-demo</h1>
           <p>
@@ -22,9 +23,10 @@ const IndexPage = (): React.ReactElement => {
             headerista.
           </p>
           <p>Voit myös kirjatua ulos toisessa ikkunassa.</p>
-          <LoginComponent client={keycloak.userManager} />
+          <LoginComponent client={keycloak.client} />
           <ReduxConsumer />
           <WithAuthDemo />
+          <KeycloakConsumer />
         </>
       ) : (
         <div>Error:Keycloakia ei löydy</div>

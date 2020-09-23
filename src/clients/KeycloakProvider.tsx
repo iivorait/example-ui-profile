@@ -4,7 +4,7 @@ import { Client, ClientProps } from '.';
 import { useKeycloak } from './keycloak';
 
 export interface KeycloakContextProps {
-  readonly userManager: Client;
+  readonly client: Client;
 }
 
 export const KeycloakContext = React.createContext<KeycloakContextProps | null>(
@@ -16,7 +16,7 @@ export const KeycloakProvider: FC<Partial<ClientProps>> = ({ children }) => {
   return (
     <KeycloakContext.Provider
       value={{
-        userManager: client // todo: just 'client'
+        client
       }}>
       {children}
     </KeycloakContext.Provider>

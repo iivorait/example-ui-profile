@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from 'react';
-import {
+import Oidc, {
   UserManager,
   UserManagerSettings,
   WebStorageStateStore,
@@ -16,23 +16,7 @@ import {
   createClient,
   ClientFactory
 } from './index';
-
-const location = window.location.origin;
-
-/* eslint-disable @typescript-eslint/camelcase */
-const defaultOptions: UserManagerSettings = {
-  userStore: new WebStorageStateStore({ store: window.localStorage }),
-  authority: 'https://tunnistus.hel.ninja/auth/realms/helsinki-tunnistus',
-  automaticSilentRenew: true,
-  client_id: 'https://api.hel.fi/auth/example-ui-profile',
-  redirect_uri: `${location}/callback`,
-  response_type: 'id_token token',
-  silent_redirect_uri: `${location}/silent_renew.html`,
-  post_logout_redirect_uri: `${location}/`
-  // This calculates to 1 minute, good for debugging:
-  // accessTokenExpiringNotificationTime: 59.65 * 60,
-};
-/* eslint-enable @typescript-eslint/camelcase */
+import config from '../config';
 
 let client: Client | null = null;
 
@@ -70,14 +54,29 @@ function bindEvents(
   );
 }
 
-export function getClient(config: Partial<UserManagerSettings>): Client {
+export function getClient(
+  configOverrides: Partial<UserManagerSettings>
+): Client {
   if (client) {
     return client;
   }
+  /* eslint-disable @typescript-eslint/camelcase */
   const mergedConfig: UserManagerSettings = {
-    ...defaultOptions,
-    ...config
+    userStore: new WebStorageStateStore({ store: window.localStorage }),
+    authority: config.client.authority,
+    automaticSilentRenew: config.client.automaticSilentRenew,
+    client_id: config.client.clientId,
+    redirect_uri: config.getLocationBasedUri(config.client.callbackPath),
+    response_type: config.client.responseType,
+    silent_redirect_uri: config.getLocationBasedUri(
+      config.client.silentAuthPath
+    ),
+    post_logout_redirect_uri: config.getLocationBasedUri(
+      config.client.logoutPath
+    ),
+    ...configOverrides
   };
+  /* eslint-enable @typescript-eslint/camelcase */
   const manager = new UserManager(mergedConfig);
   const {
     eventTrigger,
@@ -93,6 +92,11 @@ export function getClient(config: Partial<UserManagerSettings>): Client {
     getStatus,
     setError
   } = clientFunctions;
+
+  if (config.client.enableLogging) {
+    Oidc.Log.logger = console;
+    Oidc.Log.level = Oidc.Log.INFO;
+  }
 
   const getUser: Client['getUser'] = () => {
     if (isAuthenticated()) {

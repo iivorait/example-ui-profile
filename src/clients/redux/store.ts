@@ -14,12 +14,9 @@ export const store = createStore(reducer, {
 
 export const connectClient = (client: Client): void => {
   client.addListener(ClientEvent.AUTHORIZED, payload => {
-    // console.log('client AUTHORIZED event in store', eventClient.getUser());
-
     store.dispatch(authorized(payload as User));
   });
   client.addListener(ClientEvent.UNAUTHORIZED, () => {
-    // console.log('client UNAUTHORIZED event in store');
     store.dispatch(unauthorized());
   });
 };

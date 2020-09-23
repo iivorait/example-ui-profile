@@ -13,14 +13,6 @@ import {
   ClientFactory
 } from './index';
 
-/*
-const defaultOptions: Keycloak.KeycloakConfig = {
-  url: 'https://tunnistus.hel.ninja/auth',
-  realm: 'helsinki-tunnistus',
-  clientId: 'https://api.hel.fi/auth/example-ui-profile'
-};
-*/
-
 function setSessionStorageTokens({
   token,
   idToken,
@@ -92,7 +84,6 @@ export function getClient(
     clientId: config.client.clientId,
     ...configOverrides
   };
-  console.log('config is', config);
   const keycloak: Keycloak.KeycloakInstance = Keycloak(mergedConfig);
   const savedTokens = getSessionStorageTokens();
   const {
@@ -192,7 +183,7 @@ export function getClient(
         token: savedTokens.token,
         refreshToken: savedTokens.refreshToken,
         idToken: savedTokens.idToken,
-        enableLogging: true,
+        enableLogging: config.client.enableLogging,
         silentCheckSsoRedirectUri: config.getLocationBasedUri(
           '/silent-check-sso.html'
         )

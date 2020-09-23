@@ -8,7 +8,7 @@ const AuthComponent = (props: WithAuthChildProps): React.ReactElement => {
   return (
     <DemoWrapper title="Sisältö vain kirjatuneelle">
       <div>
-        Tämä sisältö on kirjautuneelle.Kirjautunut käyttäjä on{' '}
+        Tämä sisältö on kirjautuneelle. Kirjautunut käyttäjä on{' '}
         {user && user.given_name}
       </div>
     </DemoWrapper>
