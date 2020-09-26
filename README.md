@@ -20,7 +20,7 @@ REACT_APP_OIDC_CLIENT_ID="https://api.hel.fi/auth/example-ui-profile"
 
 other settings should not be changed
 
-Starting server with temporary environment variables:
+Config can also be overridden for command line:
 REACT_APP_OIDC_URL=https://foo.bar yarn start
 
 ## Docker

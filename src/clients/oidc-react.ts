@@ -9,7 +9,7 @@ import Oidc, {
 import {
   Client,
   ClientStatus,
-  ClientStatusIds,
+  ClientStatusId,
   User as ClientUser,
   ClientEvent,
   ClientError,
@@ -27,7 +27,7 @@ function oidcUserToClientUser(user: User): ClientUser {
 function bindEvents(
   manager: UserManager,
   eventFunctions: {
-    onAuthChange: ClientFactory['onAuthChange'];
+    onAuthChange: Client['onAuthChange'];
     setError: ClientFactory['setError'];
     eventTrigger: ClientFactory['eventTrigger'];
   }
@@ -54,12 +54,9 @@ function bindEvents(
   );
 }
 
-export function getClient(
+export function createOIDCClient(
   configOverrides: Partial<UserManagerSettings>
 ): Client {
-  if (client) {
-    return client;
-  }
   /* eslint-disable @typescript-eslint/camelcase */
   const mergedConfig: UserManagerSettings = {
     userStore: new WebStorageStateStore({ store: window.localStorage }),
@@ -242,16 +239,27 @@ export function getClient(
     clearSession,
     handleCallback,
     getOrLoadUser,
+    onAuthChange,
     ...clientFunctions
   };
   bindEvents(manager, { onAuthChange, eventTrigger, setError });
   return client;
 }
 
+export function getClient(
+  configOverrides: Partial<UserManagerSettings>
+): Client {
+  if (client) {
+    return client;
+  }
+  client = createOIDCClient(configOverrides);
+  return client;
+}
+
 export const useOidc = (): Client => {
   const clientRef: React.Ref<Client> = useRef(getClient({}));
   const clientFromRef: Client = clientRef.current as Client;
-  const [, setStatus] = useState<ClientStatusIds>(clientFromRef.getStatus());
+  const [, setStatus] = useState<ClientStatusId>(clientFromRef.getStatus());
   useEffect(() => {
     const initClient = async (): Promise<void> => {
       if (!clientFromRef.isInitialized()) {
@@ -266,7 +274,7 @@ export const useOidc = (): Client => {
     const statusListenerDisposer = clientFromRef.addListener(
       ClientEvent.STATUS_CHANGE,
       status => {
-        setStatus(status as ClientStatusIds);
+        setStatus(status as ClientStatusId);
       }
     );
 
@@ -315,7 +323,7 @@ export const useOidcErrorDetection = (): ClientError => {
 export const useOidcCallback = (): Client => {
   const clientRef: React.Ref<Client> = useRef(getClient({}));
   const clientFromRef: Client = clientRef.current as Client;
-  const [, setStatus] = useState<ClientStatusIds>(clientFromRef.getStatus());
+  const [, setStatus] = useState<ClientStatusId>(clientFromRef.getStatus());
   useEffect(() => {
     const initClient = async (): Promise<void> => {
       if (!clientFromRef.isInitialized()) {
@@ -330,7 +338,7 @@ export const useOidcCallback = (): Client => {
     const statusListenerDisposer = clientFromRef.addListener(
       ClientEvent.STATUS_CHANGE,
       status => {
-        setStatus(status as ClientStatusIds);
+        setStatus(status as ClientStatusId);
       }
     );
 

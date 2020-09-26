@@ -5,7 +5,7 @@ import config from '../config';
 import {
   Client,
   ClientStatus,
-  ClientStatusIds,
+  ClientStatusId,
   User,
   ClientEvent,
   ClientError,
@@ -27,7 +27,7 @@ function setSessionStorageTokens({
   localStorage.setItem('refreshToken', refreshToken || '');
 }
 
-function getSessionStorageTokens(): {
+export function getSessionStorageTokens(): {
   token: string | undefined;
   idToken: string | undefined;
   refreshToken: string | undefined;
@@ -44,7 +44,7 @@ let client: Client | null = null;
 function bindEvents(
   keycloak: Keycloak.KeycloakInstance,
   eventFunctions: {
-    onAuthChange: ClientFactory['onAuthChange'];
+    onAuthChange: Client['onAuthChange'];
     setError: ClientFactory['setError'];
     eventTrigger: ClientFactory['eventTrigger'];
   }
@@ -72,12 +72,9 @@ function bindEvents(
   /* eslint-enable no-param-reassign */
 }
 
-export function getClient(
+export function createKeycloakClient(
   configOverrides: Partial<Keycloak.KeycloakConfig>
 ): Client {
-  if (client) {
-    return client;
-  }
   const mergedConfig: Keycloak.KeycloakConfig = {
     url: config.client.url,
     realm: config.client.realm,
@@ -124,6 +121,10 @@ export function getClient(
     return true;
   };
 
+  const clearSession: Client['clearSession'] = () => {
+    setSessionStorageTokens({ token: '', refreshToken: '', idToken: '' });
+  };
+
   const login: Client['login'] = () => {
     keycloak.login({
       redirectUri: config.getLocationBasedUri('/'), // todo redirect back to page login was initiated
@@ -133,13 +134,10 @@ export function getClient(
 
   const logout: Client['logout'] = () => {
     eventTrigger(ClientEvent.LOGGING_OUT);
+    clearSession();
     keycloak.logout({
       redirectUri: config.getLocationBasedUri('/')
     });
-  };
-
-  const clearSession: Client['clearSession'] = () => {
-    setSessionStorageTokens({ token: '', refreshToken: '', idToken: '' });
   };
 
   const handleCallback: Client['handleCallback'] = () => {
@@ -170,7 +168,6 @@ export function getClient(
   };
 
   let initPromise: Promise<User | undefined> | undefined;
-
   const init: Client['init'] = () => {
     if (initPromise) {
       return initPromise;
@@ -203,9 +200,9 @@ export function getClient(
           }
           resolve(undefined);
         })
-        .catch(() => {
+        .catch((e?: {}) => {
           onAuthChange(false);
-          reject();
+          reject(e);
         });
     });
     return initPromise;
@@ -219,7 +216,11 @@ export function getClient(
     if (isInitialized()) {
       return Promise.resolve(undefined);
     }
-    return init();
+    return new Promise((resolve, reject) => {
+      init()
+        .then(() => resolve(getUser()))
+        .catch(e => reject(e));
+    });
   };
 
   client = {
@@ -232,16 +233,27 @@ export function getClient(
     clearSession,
     handleCallback,
     getOrLoadUser,
+    onAuthChange,
     ...clientFunctions
   };
   bindEvents(keycloak, { onAuthChange, eventTrigger, setError });
   return client;
 }
 
+export function getClient(
+  configOverrides: Partial<Keycloak.KeycloakConfig>
+): Client {
+  if (client) {
+    return client;
+  }
+  client = createKeycloakClient(configOverrides);
+  return client;
+}
+
 export const useKeycloak = (): Client => {
   const clientRef: React.Ref<Client> = useRef(getClient({}));
   const clientFromRef: Client = clientRef.current as Client;
-  const [, setStatus] = useState<ClientStatusIds>(clientFromRef.getStatus());
+  const [, setStatus] = useState<ClientStatusId>(clientFromRef.getStatus());
   useEffect(() => {
     const initClient = async (): Promise<void> => {
       if (!clientFromRef.isInitialized()) {
@@ -256,7 +268,7 @@ export const useKeycloak = (): Client => {
     const statusListenerDisposer = clientFromRef.addListener(
       ClientEvent.STATUS_CHANGE,
       status => {
-        setStatus(status as ClientStatusIds);
+        setStatus(status as ClientStatusId);
       }
     );
 

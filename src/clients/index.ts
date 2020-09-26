@@ -3,7 +3,7 @@ export type EventPayload =
   | User
   | undefined
   | Client
-  | ClientStatusIds
+  | ClientStatusId
   | ClientError;
 export type EventListener = (payload?: EventPayload) => void;
 export type Client = {
@@ -17,12 +17,13 @@ export type Client = {
   getUser: () => User | undefined;
   getOrLoadUser: () => Promise<User | undefined | null>;
   loadUserProfile: () => Promise<User>;
-  getStatus: () => ClientStatusIds;
-  setStatus: (newStatus: ClientStatusIds) => boolean;
+  getStatus: () => ClientStatusId;
+  setStatus: (newStatus: ClientStatusId) => boolean;
   getError: () => ClientError;
   setError: (newError?: ClientError) => boolean;
   getUserProfile: () => User | undefined;
-  addListener: (eventType: ClientEventIds, listener: EventListener) => Function;
+  addListener: (eventType: ClientEventId, listener: EventListener) => Function;
+  onAuthChange: (authenticated: boolean) => boolean;
 };
 
 export const ClientStatus = {
@@ -32,7 +33,7 @@ export const ClientStatus = {
   UNAUTHORIZED: 'UNAUTHORIZED'
 } as const;
 
-export type ClientStatusIds = typeof ClientStatus[keyof typeof ClientStatus]; // todo change plural -> single
+export type ClientStatusId = typeof ClientStatus[keyof typeof ClientStatus]; // todo change plural -> single
 
 export const ClientEvent = {
   USER_EXPIRED: 'USER_EXPIRED',
@@ -44,7 +45,7 @@ export const ClientEvent = {
   ...ClientStatus
 } as const;
 
-export type ClientEventIds = typeof ClientEvent[keyof typeof ClientEvent]; // todo change plural -> single
+export type ClientEventId = typeof ClientEvent[keyof typeof ClientEvent]; // todo change plural -> single
 
 export const ClientError = {
   INIT_ERROR: 'INIT_ERROR',
@@ -95,7 +96,7 @@ export interface ClientProps {
   responseType?: string;
   /**
    * The scope being requested from the OIDC/OAuth2 provider.
-   * Default: 'openid'
+   * Default: 'profile'
    */
   scope?: string;
   /**
@@ -126,13 +127,13 @@ export interface ClientProps {
 
 type EventHandlers = {
   addListener: Client['addListener'];
-  eventTrigger: (eventType: ClientEventIds, payload?: EventPayload) => void;
+  eventTrigger: (eventType: ClientEventId, payload?: EventPayload) => void;
 };
 
 export const createEventHandling = (): EventHandlers => {
-  const listeners: Map<ClientEventIds, Set<EventListener>> = new Map(); // todo:
+  const listeners: Map<ClientEventId, Set<EventListener>> = new Map();
   const getListenerListForEventType = (
-    eventType: ClientEventIds
+    eventType: ClientEventId
   ): Set<EventListener> => {
     if (!listeners.has(eventType)) {
       listeners.set(eventType, new Set());
@@ -151,7 +152,7 @@ export const createEventHandling = (): EventHandlers => {
     };
   };
   const eventTrigger = (
-    eventType: ClientEventIds,
+    eventType: ClientEventId,
     payload?: EventPayload
   ): void => {
     const source = listeners.get(eventType);
@@ -170,7 +171,6 @@ export type ClientFactory = {
   eventTrigger: EventHandlers['eventTrigger'];
   getStoredUser: () => User | undefined;
   setStoredUser: (newUser: User | undefined) => void;
-  onAuthChange: (authenticated: boolean) => boolean;
   getStatus: Client['getStatus'];
   setStatus: Client['setStatus'];
   getError: Client['getError'];
@@ -180,7 +180,7 @@ export type ClientFactory = {
 } & EventHandlers;
 
 export const createClient = (): ClientFactory => {
-  let status: ClientStatusIds = ClientStatus.NONE;
+  let status: ClientStatusId = ClientStatus.NONE;
   let error: ClientError;
   let user: User | undefined;
   const { addListener, eventTrigger } = createEventHandling();
@@ -229,8 +229,6 @@ export const createClient = (): ClientFactory => {
     return true;
   };
 
-  const onAuthChange: ClientFactory['onAuthChange'] = auth => auth;
-
   return {
     addListener,
     eventTrigger,
@@ -241,7 +239,6 @@ export const createClient = (): ClientFactory => {
     setStatus,
     setError,
     isInitialized,
-    isAuthenticated,
-    onAuthChange
+    isAuthenticated
   };
 };

@@ -23,7 +23,7 @@ const clientConfig: ClientProps = {
   logoutPath: process.env.REACT_APP_OIDC_LOGOUT_PATH || '/',
   silentAuthPath: process.env.REACT_APP_OIDC_SILENT_AUTH_PATH,
   responseType: process.env.REACT_APP_OIDC_RESPONSE_TYPE || 'id_token token',
-  scope: process.env.REACT_APP_OIDC_SCOPE || 'openid',
+  scope: process.env.REACT_APP_OIDC_SCOPE || 'profile',
   autoSignIn: envValueToBoolean(process.env.REACT_APP_OIDC_AUTO_SIGN_IN, true),
   automaticSilentRenew: envValueToBoolean(
     process.env.REACT_APP_OIDC_AUTO_SILENT_RENEW,
