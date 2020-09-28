@@ -214,9 +214,7 @@ export const createClient = (): ClientFactory => {
       return false;
     }
     error = newError;
-    if (newType) {
-      eventTrigger(ClientEvent.ERROR, error);
-    }
+    eventTrigger(ClientEvent.ERROR, error);
     return true;
   };
 
