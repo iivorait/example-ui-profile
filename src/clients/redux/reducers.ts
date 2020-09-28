@@ -10,28 +10,28 @@ const reducer: Reducer = (state, action): StoreState => {
       const client: Client = action.payload;
       const status = client.getStatus();
       const authenticated = client.isAuthenticated();
-      const initialised = client.isInitialized();
+      const initialized = client.isInitialized();
       return {
         ...state,
-        user: null,
+        user: undefined,
         status,
         authenticated,
-        initialised
+        initialized
       };
     case ClientEvent.USER_EXPIRED:
       return {
         ...state,
-        user: null,
+        user: undefined,
         status: ClientStatus.UNAUTHORIZED
       };
     case ClientEvent.ERROR:
-      return { ...state };
+      return { ...state, error: action.payload };
     case ClientEvent.UNAUTHORIZED:
       return {
         ...state,
-        user: null,
+        user: undefined,
         status: ClientStatus.UNAUTHORIZED,
-        initialised: true,
+        initialized: true,
         authenticated: false
       };
     case ClientEvent.AUTHORIZED:
@@ -39,14 +39,14 @@ const reducer: Reducer = (state, action): StoreState => {
         ...state,
         user: action.payload,
         status: ClientStatus.AUTHORIZED,
-        initialised: true,
+        initialized: true,
         authenticated: true
       };
     case ClientEvent.INITIALIZING:
       return {
         ...state,
         status: ClientStatus.INITIALIZING,
-        initialised: false
+        initialized: false
       };
     default:
       return state;

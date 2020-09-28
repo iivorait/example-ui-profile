@@ -8,12 +8,12 @@ import {
   EventPayload
 } from '../index';
 
-describe('Client factory', () => {
+describe('Client factory ', () => {
   let client: ClientFactory;
   beforeEach(() => {
     client = createClient();
   });
-  describe('getter and setters work properly', () => {
+  describe('getter and setters work properly and ', () => {
     it('getStatus returns current status. setStatus changes status and returns boolean indicating did status change', () => {
       expect(client.getStatus()).toBe(ClientStatus.NONE);
       expect(client.setStatus(ClientStatus.NONE)).toBe(false);
@@ -42,7 +42,7 @@ describe('Client factory', () => {
       expect(client.getStoredUser()!.name).toMatch(user.name);
     });
   });
-  describe('isInitialized and isAuthenticated reflect status changes', () => {
+  describe('isInitialized and isAuthenticated reflect status changes ', () => {
     it('isInitialized', () => {
       expect(client.getStatus()).toEqual(ClientStatus.NONE);
       expect(client.isInitialized()).toBe(false);
@@ -64,7 +64,7 @@ describe('Client factory', () => {
       expect(client.isAuthenticated()).toBe(true);
     });
   });
-  describe('events', () => {
+  describe('event handling can ', () => {
     type MockFunctions = {
       getLastCallPayload: Function;
       getCallCount: Function;

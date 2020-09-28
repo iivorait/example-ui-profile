@@ -8,7 +8,7 @@ export const store = createStore(reducer, {
   user: undefined,
   status: ClientStatus.NONE,
   authenticated: false,
-  initialised: false,
+  initialized: false,
   error: undefined
 });
 

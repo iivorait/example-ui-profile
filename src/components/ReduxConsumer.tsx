@@ -7,8 +7,8 @@ import DemoWrapper from './DemoWrapper';
 
 const ReduxConsumer = (): React.ReactElement => {
   const state: StoreState = useSelector((storeState: StoreState) => storeState);
-  const { initialised, authenticated, user } = state;
-  if (!initialised) {
+  const { initialized, authenticated, user } = state;
+  if (!initialized) {
     return (
       <DemoWrapper title="Redux-kuuntelija">
         <div className={styles['content-element']}>

@@ -16,7 +16,7 @@ customGlobal.fetchMock = customGlobal.fetch;
 configure({ adapter: new Adapter() });
 
 jest.mock('react-router', () => ({
-  ...jest.requireActual('react-router'),
+  ...(jest.requireActual('react-router') as {}),
   useHistory: (): Record<string, Function> => ({
     push: jest.fn()
   })
@@ -83,6 +83,14 @@ jest.mock('keycloak-js', () => {
   const getInstance = (): Keycloak.KeycloakInstance => {
     return clientInstance;
   };
+  const createValidUserData = (props?: {}): {} => {
+    return {
+      email: 'valid@user.fi',
+      // eslint-disable-next-line @typescript-eslint/camelcase
+      session_state: '1234567890',
+      ...props
+    };
+  };
   const resetMock = (): void => {
     creationCount = 0;
     initCallCount = 0;
@@ -117,13 +125,17 @@ jest.mock('keycloak-js', () => {
         getLoginCallCount,
         getLogoutCallCount,
         setTokens,
-        getInstance
+        getInstance,
+        createValidUserData
       };
     }
     creationCount += 1;
     clientInstance = {
       ...jest.requireActual('keycloak-js'),
-      init(): Promise<{}> {
+      init(
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        initOptions?: Keycloak.KeycloakInitOptions
+      ): Keycloak.KeycloakPromise<boolean, Keycloak.KeycloakError> {
         initCallCount += 1;
         return new Promise((resolve: Function, reject: Function) => {
           setTimeout((): void => {
@@ -132,15 +144,24 @@ jest.mock('keycloak-js', () => {
               ? reject(clientInitRejectPayload)
               : resolve(clientInitResolvePayload);
           }, promiseTimeout);
-        });
+        }) as Keycloak.KeycloakPromise<boolean, Keycloak.KeycloakError>;
       },
-      login: (): void => {
-        loginMock();
+      login: (
+        options?: Keycloak.KeycloakLoginOptions | undefined
+      ): Keycloak.KeycloakPromise<void, void> => {
+        loginMock(options);
+        return Promise.resolve() as Keycloak.KeycloakPromise<void, void>;
       },
-      logout: (): void => {
-        logoutMock();
+      logout: (
+        options?: Keycloak.KeycloakLogoutOptions | undefined
+      ): Keycloak.KeycloakPromise<void, void> => {
+        logoutMock(options);
+        return Promise.resolve() as Keycloak.KeycloakPromise<void, void>;
       },
-      loadUserProfile(): Promise<{}> {
+      loadUserProfile(): Keycloak.KeycloakPromise<
+        Keycloak.KeycloakProfile,
+        void
+      > {
         return new Promise((resolve: Function, reject: Function) => {
           setTimeout((): void => {
             // eslint-disable-next-line no-unused-expressions
@@ -148,7 +169,7 @@ jest.mock('keycloak-js', () => {
               ? reject(loadProfileRejectPayload)
               : resolve(loadProfileResolvePayload);
           }, promiseTimeout);
-        });
+        }) as Keycloak.KeycloakPromise<Keycloak.KeycloakProfile, void>;
       },
       tokenParsed,
       get token(): string | undefined {

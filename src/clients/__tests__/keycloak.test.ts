@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable @typescript-eslint/camelcase */
 import MockedKeyCloak from 'keycloak-js';
+import { MockMutator } from '.';
 import {
   ClientStatus,
   Client,
@@ -62,34 +63,15 @@ function createEventListeners(addEventListener: Function): EventListeners {
   };
 }
 
-function createValidUserData(props?: {}): {} {
-  return {
-    email: 'valid@user.fi',
-    // eslint-disable-next-line @typescript-eslint/camelcase
-    session_state: '1234567890',
-    ...props
-  };
-}
-
 describe('Client ', () => {
   let client: Client;
   function createNewClient(): Client {
     client = createKeycloakClient({});
     return client;
   }
-  const mockMutator = (MockedKeyCloak('returnMockMutator') as unknown) as {
-    setClientInitPayload: (resolve: {} | null, reject: {} | null) => void;
-    setTokenParsed: (props: {}) => void;
-    setUser: (props: {}) => void;
-    getInitCallCount: () => number;
-    getCreationCount: () => number;
-    resetMock: () => void;
-    setLoadProfilePayload: (resolve: {} | null, reject: {} | null) => void;
-    getLoginCallCount: () => number;
-    getLogoutCallCount: () => number;
-    setTokens: (newTokens: {}) => {};
-    getInstance: () => Keycloak.KeycloakInstance;
-  };
+  const mockMutator = (MockedKeyCloak(
+    'returnMockMutator'
+  ) as unknown) as MockMutator;
   let eventListeners: EventListeners;
 
   describe('calling init()', () => {
@@ -141,7 +123,7 @@ describe('Client ', () => {
     });
     it('changes status and triggers events when changed statusChange', async () => {
       const email = 'authorized@bar.com';
-      mockMutator.setUser(createValidUserData({ email }));
+      mockMutator.setUser(mockMutator.createValidUserData({ email }));
       await to(client.init());
       expect(client.getStatus()).toBe(ClientStatus.AUTHORIZED);
       expect(eventListeners.getCallCount(ClientEvent.STATUS_CHANGE)).toBe(2); // INITIALIZED + AUTHORIZED
@@ -177,7 +159,7 @@ describe('Client ', () => {
     it('returns user data if authenticated and data is found. Otherwise returns undefined', async () => {
       await to(client.init());
       const email = 'foo@bar.com';
-      mockMutator.setUser(createValidUserData({ email }));
+      mockMutator.setUser(mockMutator.createValidUserData({ email }));
       const user = client.getUser();
       expect(user && user.email).toBe(email);
       expect(client.onAuthChange(false)).toBe(true);
@@ -230,7 +212,10 @@ describe('Client ', () => {
     });
     it('loads and stores user data when successful', async () => {
       const email = 'foo@another.bar.com';
-      mockMutator.setLoadProfilePayload(createValidUserData({ email }), null);
+      mockMutator.setLoadProfilePayload(
+        mockMutator.createValidUserData({ email }),
+        null
+      );
       const [error, user] = await to(client.loadUserProfile());
       expect(error).toBe(null);
       expect(user && (user as any).email).toBe(email);
@@ -263,7 +248,7 @@ describe('Client ', () => {
     });
     it('calls init() if not initialized and returns user data. Init is not called again', async () => {
       const email = 'foo@foofoo.bar.com';
-      mockMutator.setUser(createValidUserData({ email }));
+      mockMutator.setUser(mockMutator.createValidUserData({ email }));
       const [error, user] = await to(client.getOrLoadUser());
       expect(error).toBe(null);
       expect(mockMutator.getInitCallCount()).toBe(1);
@@ -288,7 +273,7 @@ describe('Client ', () => {
       expect(user2).toBe(undefined);
     });
   });
-  describe('events are handled', () => {
+  describe('event listeners work and ', () => {
     beforeEach(() => {
       mockMutator.resetMock();
       client = createNewClient();
@@ -299,7 +284,7 @@ describe('Client ', () => {
     });
     it('keycloak.onReady(), onAuthSuccess() and onAuthLogout() trigger authChange', async () => {
       const email = 'onReady@foofoo.bar.com';
-      mockMutator.setUser(createValidUserData({ email }));
+      mockMutator.setUser(mockMutator.createValidUserData({ email }));
       mockMutator.setClientInitPayload(null, { error: 1 });
       await to(client.init());
       expect(client.getStatus()).toBe(ClientStatus.UNAUTHORIZED);
@@ -324,7 +309,7 @@ describe('Client ', () => {
     it('keycloak.onAuthError() and onAuthRefreshError() set and trigger error', async () => {
       mockMutator.setClientInitPayload(null, { error: 1 });
       const instance = mockMutator.getInstance();
-
+      expect(eventListeners.getCallCount(ClientEvent.ERROR)).toBe(0);
       if (instance.onAuthError) {
         instance.onAuthError({
           error: 'error',
@@ -345,7 +330,7 @@ describe('Client ', () => {
     });
     it('keycloak.onTokenExpired() triggers USER_EXPIRED event', async () => {
       const instance = mockMutator.getInstance();
-
+      expect(eventListeners.getCallCount(ClientEvent.USER_EXPIRED)).toBe(0);
       if (instance.onTokenExpired) {
         instance.onTokenExpired();
       }
