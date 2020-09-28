@@ -10,7 +10,8 @@ import {
   ClientEvent,
   ClientError,
   createClient,
-  ClientFactory
+  ClientFactory,
+  Token
 } from './index';
 
 function setSessionStorageTokens({
@@ -18,9 +19,9 @@ function setSessionStorageTokens({
   idToken,
   refreshToken
 }: {
-  token: string | undefined;
-  idToken: string | undefined;
-  refreshToken: string | undefined;
+  token: Token;
+  idToken: Token;
+  refreshToken: Token;
 }): void {
   localStorage.setItem('token', token || '');
   localStorage.setItem('idToken', idToken || '');
@@ -28,9 +29,9 @@ function setSessionStorageTokens({
 }
 
 export function getSessionStorageTokens(): {
-  token: string | undefined;
-  idToken: string | undefined;
-  refreshToken: string | undefined;
+  token: Token;
+  idToken: Token;
+  refreshToken: Token;
 } {
   return {
     token: localStorage.getItem('token') || undefined,
@@ -127,7 +128,7 @@ export function createKeycloakClient(
 
   const login: Client['login'] = () => {
     keycloak.login({
-      redirectUri: config.getLocationBasedUri('/'), // todo redirect back to page login was initiated
+      redirectUri: config.getLocationBasedUri('/'), // todo redirect back to page login was initiated.
       scope: config.client.scope
     });
   };

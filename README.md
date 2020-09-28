@@ -11,28 +11,40 @@ Included in this demo app:
 
 Clients dispatch events and trigger changes which then trigger re-rendering of the components using clients.
 
+## using oidc-client
+Client swapping is not a parameter, it has to be done by code change
+```javascript
+// in src/clients/keycloak.ts
+import { getClient as getOidcClient } from './oidc-react';
+// change getClient({}) -> getOidcClient({}) in useKeycloak() and useKeycloakErrorDetection()
+```
+
 
 ## Config
 use .env -files. Some values are client specific. Default client is keycloak and relevant settings are:
+```yml
 REACT_APP_OIDC_URL="https://tunnistus.hel.ninja/auth"
 REACT_APP_OIDC_REALM="helsinki-tunnistus"
 REACT_APP_OIDC_CLIENT_ID="https://api.hel.fi/auth/example-ui-profile"
-
+```
 other settings should not be changed
 
 Config can also be overridden for command line:
+```bash
 REACT_APP_OIDC_URL=https://foo.bar yarn start
-
+```
 ## Docker
 
 Run `docker-compose up`
 
 Starting docker with temporary environment variables:
-Open docker-compose.yml and add new new 'environment' under services/app.
+Open docker-compose.yml and add new 'environment' under services/app.
 
 Example:
 
+```yml
 services:
   app:
     environment: 
       - REACT_APP_OIDC_URL=https://foo.bar 
+```

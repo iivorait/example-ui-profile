@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { Navigation } from 'hds-react';
 
 import { useKeycloak } from '../clients/keycloak';
-// import { useTranslation } from 'react-i18next';
 
 type LanguageOption = { code: string; label: string };
 
@@ -12,12 +11,7 @@ const Header = (): React.ReactElement => {
     { code: 'sv', label: 'Svenska' },
     { code: 'en', label: 'English' }
   ];
-  /*
-  const { i18n } = useTranslation();
-  const setLanguage = (code: string) => {
-    i18n.changeLanguage(code);
-  };
-  */
+
   const keycloak = useKeycloak();
   const authenticated = keycloak.isAuthenticated();
   const initialized = keycloak.isInitialized();
@@ -29,10 +23,7 @@ const Header = (): React.ReactElement => {
   // show helsingfors logo if swedish is selected as the language
   const logoLanguage = language.code === 'sv' ? 'sv' : 'fi';
 
-  const title =
-    language.code === 'sv'
-      ? 'Helsingfors Systembolaget'
-      : 'Helsinki Design System';
+  const title = 'Helsinki Profiili Example';
 
   // formats the selected value
   const formatSelectedValue = ({ code }: LanguageOption): string =>

@@ -1,4 +1,5 @@
 export type User = Record<string, string | number | boolean>;
+export type Token = string | undefined;
 export type EventPayload =
   | User
   | undefined
@@ -33,7 +34,7 @@ export const ClientStatus = {
   UNAUTHORIZED: 'UNAUTHORIZED'
 } as const;
 
-export type ClientStatusId = typeof ClientStatus[keyof typeof ClientStatus]; // todo change plural -> single
+export type ClientStatusId = typeof ClientStatus[keyof typeof ClientStatus];
 
 export const ClientEvent = {
   USER_EXPIRED: 'USER_EXPIRED',
@@ -45,7 +46,7 @@ export const ClientEvent = {
   ...ClientStatus
 } as const;
 
-export type ClientEventId = typeof ClientEvent[keyof typeof ClientEvent]; // todo change plural -> single
+export type ClientEventId = typeof ClientEvent[keyof typeof ClientEvent];
 
 export const ClientError = {
   INIT_ERROR: 'INIT_ERROR',
