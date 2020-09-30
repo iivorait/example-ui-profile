@@ -10,7 +10,8 @@ import {
   InstanceIdentifier,
   ClientValues,
   getClientDataFromComponent,
-  matchClientDataWithComponent
+  matchClientDataWithComponent,
+  configureClient
 } from '.';
 import { KeycloakProvider, KeycloakContext } from '../KeycloakProvider';
 import StoreProvider from '../redux/StoreProvider';
@@ -86,7 +87,8 @@ const KeyCloakErrorHookRenderer = (): React.ReactElement => {
 
 describe('Keycloak consumers ', () => {
   let dom: ReactWrapper;
-  const nonHookClient = getClient({});
+  configureClient();
+  const nonHookClient = getClient();
   const mockMutator = (MockedKeyCloak(
     'returnMockMutator'
   ) as unknown) as MockMutator;

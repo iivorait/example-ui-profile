@@ -1,6 +1,5 @@
 import { useEffect, useState, useRef } from 'react';
 import Keycloak from 'keycloak-js';
-import config from '../config';
 
 import {
   Client,
@@ -11,7 +10,10 @@ import {
   ClientError,
   createClient,
   ClientFactory,
-  Token
+  Token,
+  getClientConfig,
+  hasValidClientConfig,
+  getLocationBasedUri
 } from './index';
 
 function setSessionStorageTokens({
@@ -73,16 +75,20 @@ function bindEvents(
   /* eslint-enable no-param-reassign */
 }
 
-export function createKeycloakClient(
-  configOverrides: Partial<Keycloak.KeycloakConfig>
-): Client {
-  const mergedConfig: Keycloak.KeycloakConfig = {
-    url: config.client.url,
-    realm: config.client.realm,
-    clientId: config.client.clientId,
-    ...configOverrides
+export function createKeycloakClient(): Client {
+  if (!hasValidClientConfig()) {
+    const errorMessage = 'Invalid client config';
+    // eslint-disable-next-line no-console
+    console.error(errorMessage, getClientConfig());
+    throw new Error(errorMessage);
+  }
+  const clientConfig = getClientConfig();
+  const config: Keycloak.KeycloakConfig = {
+    url: clientConfig.url,
+    realm: clientConfig.realm,
+    clientId: clientConfig.clientId
   };
-  const keycloak: Keycloak.KeycloakInstance = Keycloak(mergedConfig);
+  const keycloak: Keycloak.KeycloakInstance = Keycloak(config);
   const savedTokens = getSessionStorageTokens();
   const {
     eventTrigger,
@@ -128,8 +134,8 @@ export function createKeycloakClient(
 
   const login: Client['login'] = () => {
     keycloak.login({
-      redirectUri: config.getLocationBasedUri('/'), // todo redirect back to page login was initiated.
-      scope: config.client.scope
+      redirectUri: getLocationBasedUri('/'), // todo redirect back to page login was initiated.
+      scope: clientConfig.scope
     });
   };
 
@@ -137,7 +143,7 @@ export function createKeycloakClient(
     eventTrigger(ClientEvent.LOGGING_OUT);
     clearSession();
     keycloak.logout({
-      redirectUri: config.getLocationBasedUri('/')
+      redirectUri: getLocationBasedUri('/')
     });
   };
 
@@ -176,15 +182,13 @@ export function createKeycloakClient(
     setStatus(ClientStatus.INITIALIZING);
     initPromise = new Promise((resolve, reject) => {
       const keyCloakPromise = keycloak.init({
-        onLoad: config.client.loginType,
-        flow: config.client.flow,
+        onLoad: clientConfig.loginType,
+        flow: clientConfig.flow,
         token: savedTokens.token,
         refreshToken: savedTokens.refreshToken,
         idToken: savedTokens.idToken,
-        enableLogging: config.client.enableLogging,
-        silentCheckSsoRedirectUri: config.getLocationBasedUri(
-          '/silent-check-sso.html'
-        )
+        enableLogging: clientConfig.enableLogging,
+        silentCheckSsoRedirectUri: getLocationBasedUri('/silent-check-sso.html')
       });
 
       keyCloakPromise
@@ -241,18 +245,16 @@ export function createKeycloakClient(
   return client;
 }
 
-export function getClient(
-  configOverrides: Partial<Keycloak.KeycloakConfig>
-): Client {
+export function getClient(): Client {
   if (client) {
     return client;
   }
-  client = createKeycloakClient(configOverrides);
+  client = createKeycloakClient();
   return client;
 }
 
 export const useKeycloak = (): Client => {
-  const clientRef: React.Ref<Client> = useRef(getClient({}));
+  const clientRef: React.Ref<Client> = useRef(getClient());
   const clientFromRef: Client = clientRef.current as Client;
   const [, setStatus] = useState<ClientStatusId>(clientFromRef.getStatus());
   useEffect(() => {
@@ -282,7 +284,7 @@ export const useKeycloak = (): Client => {
 };
 
 export const useKeycloakErrorDetection = (): ClientError => {
-  const clientRef: React.Ref<Client> = useRef(getClient({}));
+  const clientRef: React.Ref<Client> = useRef(getClient());
   const clientFromRef: Client = clientRef.current as Client;
   const [error, setError] = useState<ClientError>(undefined);
   useEffect(() => {

@@ -241,3 +241,29 @@ export const createClient = (): ClientFactory => {
     isAuthenticated
   };
 };
+
+export type ClientType = 'keycloak' | 'oidc';
+let config: ClientProps;
+
+export function setClientConfig(newConfig: ClientProps): ClientProps {
+  config = newConfig;
+  return config;
+}
+
+export function getClientConfig(): ClientProps {
+  return config;
+}
+
+export function hasValidClientConfig(): boolean {
+  return !!(config && config.url && config.clientId);
+}
+
+export function getLocationBasedUri(
+  property: string | undefined
+): string | undefined {
+  const location = window.location.origin;
+  if (property === undefined) {
+    return undefined;
+  }
+  return `${location}${property}`;
+}

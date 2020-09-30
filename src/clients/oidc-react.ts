@@ -14,9 +14,11 @@ import {
   ClientEvent,
   ClientError,
   createClient,
-  ClientFactory
+  ClientFactory,
+  hasValidClientConfig,
+  getClientConfig,
+  getLocationBasedUri
 } from './index';
-import config from '../config';
 
 let client: Client | null = null;
 
@@ -54,27 +56,27 @@ function bindEvents(
   );
 }
 
-export function createOIDCClient(
-  configOverrides: Partial<UserManagerSettings>
-): Client {
+export function createOIDCClient(): Client {
+  if (!hasValidClientConfig()) {
+    const errorMessage = 'Invalid client config';
+    // eslint-disable-next-line no-console
+    console.error(errorMessage, getClientConfig());
+    throw new Error(errorMessage);
+  }
+  const clientConfig = getClientConfig();
   /* eslint-disable @typescript-eslint/camelcase */
-  const mergedConfig: UserManagerSettings = {
+  const oidcConfig: UserManagerSettings = {
     userStore: new WebStorageStateStore({ store: window.localStorage }),
-    authority: config.client.authority,
-    automaticSilentRenew: config.client.automaticSilentRenew,
-    client_id: config.client.clientId,
-    redirect_uri: config.getLocationBasedUri(config.client.callbackPath),
-    response_type: config.client.responseType,
-    silent_redirect_uri: config.getLocationBasedUri(
-      config.client.silentAuthPath
-    ),
-    post_logout_redirect_uri: config.getLocationBasedUri(
-      config.client.logoutPath
-    ),
-    ...configOverrides
+    authority: clientConfig.authority,
+    automaticSilentRenew: clientConfig.automaticSilentRenew,
+    client_id: clientConfig.clientId,
+    redirect_uri: getLocationBasedUri(clientConfig.callbackPath),
+    response_type: clientConfig.responseType,
+    silent_redirect_uri: getLocationBasedUri(clientConfig.silentAuthPath),
+    post_logout_redirect_uri: getLocationBasedUri(clientConfig.logoutPath)
   };
   /* eslint-enable @typescript-eslint/camelcase */
-  const manager = new UserManager(mergedConfig);
+  const manager = new UserManager(oidcConfig);
   const {
     eventTrigger,
     getStoredUser,
@@ -90,7 +92,7 @@ export function createOIDCClient(
     setError
   } = clientFunctions;
 
-  if (config.client.enableLogging) {
+  if (clientConfig.enableLogging) {
     Oidc.Log.logger = console;
     Oidc.Log.level = Oidc.Log.INFO;
   }
@@ -246,18 +248,16 @@ export function createOIDCClient(
   return client;
 }
 
-export function getClient(
-  configOverrides: Partial<UserManagerSettings>
-): Client {
+export function getClient(): Client {
   if (client) {
     return client;
   }
-  client = createOIDCClient(configOverrides);
+  client = createOIDCClient();
   return client;
 }
 
 export const useOidc = (): Client => {
-  const clientRef: React.Ref<Client> = useRef(getClient({}));
+  const clientRef: React.Ref<Client> = useRef(getClient());
   const clientFromRef: Client = clientRef.current as Client;
   const [, setStatus] = useState<ClientStatusId>(clientFromRef.getStatus());
   useEffect(() => {
@@ -287,7 +287,7 @@ export const useOidc = (): Client => {
 };
 
 export const useOidcErrorDetection = (): ClientError => {
-  const clientRef: React.Ref<Client> = useRef(getClient({}));
+  const clientRef: React.Ref<Client> = useRef(getClient());
   const clientFromRef: Client = clientRef.current as Client;
   const [error, setError] = useState<ClientError>(undefined);
   useEffect(() => {
@@ -321,7 +321,7 @@ export const useOidcErrorDetection = (): ClientError => {
 };
 
 export const useOidcCallback = (): Client => {
-  const clientRef: React.Ref<Client> = useRef(getClient({}));
+  const clientRef: React.Ref<Client> = useRef(getClient());
   const clientFromRef: Client = clientRef.current as Client;
   const [, setStatus] = useState<ClientStatusId>(clientFromRef.getStatus());
   useEffect(() => {

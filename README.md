@@ -16,7 +16,7 @@ Client swapping is not a parameter, it has to be done by code change
 ```javascript
 // in src/clients/keycloak.ts
 import { getClient as getOidcClient } from './oidc-react';
-// change getClient({}) -> getOidcClient({}) in useKeycloak() and useKeycloakErrorDetection()
+// change getClient() -> getOidcClient() in useKeycloak() and useKeycloakErrorDetection()
 ```
 
 

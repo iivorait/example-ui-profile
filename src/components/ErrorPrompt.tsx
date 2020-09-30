@@ -27,9 +27,17 @@ const ErrorPrompt = (
             onClose={(): void => setDismissedError(newError)}
             dismissible
             closeButtonLabelText="Sulje">
-            {sessionEndedElsewhere
-              ? `Käyttäjän sessio on päättynyt ilman uloskirjautumista tässä ikkunassa`
-              : `Virhekoodi:${newErrorType}`}
+            {sessionEndedElsewhere ? (
+              <p>
+                Käyttäjän sessio on päättynyt ilman uloskirjautumista tässä
+                ikkunassa
+              </p>
+            ) : (
+              <>
+                <p>Virhekoodi: {newErrorType}.</p>
+                <p>Viesti: {newError.message || ''}</p>
+              </>
+            )}
           </Notification>
         </div>
         <div className={styles['error-prompt-overlay']} />

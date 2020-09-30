@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable @typescript-eslint/camelcase */
 import MockedKeyCloak from 'keycloak-js';
-import { MockMutator } from '.';
+import { MockMutator, configureClient } from '.';
 import {
   ClientStatus,
   Client,
@@ -65,8 +65,9 @@ function createEventListeners(addEventListener: Function): EventListeners {
 
 describe('Client ', () => {
   let client: Client;
+  configureClient();
   function createNewClient(): Client {
-    client = createKeycloakClient({});
+    client = createKeycloakClient();
     return client;
   }
   const mockMutator = (MockedKeyCloak(

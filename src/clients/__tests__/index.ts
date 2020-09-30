@@ -1,5 +1,6 @@
 import { ReactWrapper } from 'enzyme';
-import { Client } from '..';
+import { Client, ClientProps, setClientConfig } from '..';
+import config from '../../config';
 
 export type MockMutator = {
   setClientInitPayload: (resolve: {} | null, reject: {} | null) => void;
@@ -68,6 +69,10 @@ export const matchClientDataWithComponent = (
   }
   return values;
 };
+
+export function configureClient(overrides?: ClientProps): ClientProps {
+  return setClientConfig({ ...config.client, ...overrides });
+}
 
 describe('File must return one test ', () => {
   it(' and this is just a note:', () => {

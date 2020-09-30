@@ -1,6 +1,7 @@
 import { StoreState } from '..';
 import { createKeycloakClient } from '../../keycloak';
 import { Client, ClientError, ClientStatus, User } from '../../index';
+import { configureClient } from '../../__tests__/index';
 import { store, connectClient } from '../store';
 import reducer from '../reducers';
 import {
@@ -13,10 +14,11 @@ import {
 describe('Redux store ', () => {
   let state: StoreState;
   let client: Client;
+  configureClient();
   describe('actions', () => {
     beforeEach(() => {
       state = store.getState();
-      client = createKeycloakClient({});
+      client = createKeycloakClient();
     });
     it('should return the initial state with unknown action', () => {
       expect(reducer(state, { type: 'FOO' })).toEqual(state);
@@ -71,7 +73,7 @@ describe('Redux store ', () => {
   });
   describe('is connected to the client and ', () => {
     beforeAll(() => {
-      client = createKeycloakClient({});
+      client = createKeycloakClient();
       connectClient(client);
     });
     it('onAuthChange changes store', () => {
