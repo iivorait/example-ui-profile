@@ -2,7 +2,7 @@ import React from 'react';
 import { Switch, Route } from 'react-router';
 
 import Index from './pages/Index';
-import { KeycloakProvider } from './clients/KeycloakProvider';
+import { ClientProvider } from './clients/ClientProvider';
 import OidcCallback from './clients/OidcCallback';
 import StoreProvider from './clients/redux/StoreProvider';
 import Header from './components/Header';
@@ -14,7 +14,7 @@ setClientConfig(config.client);
 
 function App(): React.ReactElement {
   return (
-    <KeycloakProvider>
+    <ClientProvider>
       <StoreProvider>
         <PageContainer>
           <Header />
@@ -30,7 +30,7 @@ function App(): React.ReactElement {
           </Switch>
         </PageContainer>
       </StoreProvider>
-    </KeycloakProvider>
+    </ClientProvider>
   );
 }
 export default App;

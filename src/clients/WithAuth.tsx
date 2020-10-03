@@ -1,7 +1,7 @@
 import React from 'react';
 
 import { Client } from '.';
-import { useKeycloak } from './keycloak';
+import { useClient } from './client';
 
 export type WithAuthChildProps = { client: Client };
 
@@ -9,7 +9,7 @@ const WithAuth = (
   AuthorizedContent: React.ComponentType<WithAuthChildProps>,
   UnAuthorizedContent: React.ComponentType<WithAuthChildProps>
 ): React.ReactElement => {
-  const client = useKeycloak();
+  const client = useClient();
   return client.isAuthenticated() ? (
     <AuthorizedContent client={client} />
   ) : (

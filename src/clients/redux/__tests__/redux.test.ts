@@ -1,7 +1,7 @@
 import { StoreState } from '..';
 import { createKeycloakClient } from '../../keycloak';
 import { Client, ClientError, ClientStatus, User } from '../../index';
-import { configureClient } from '../../__tests__/index';
+import { configureClient } from '../../__mocks__';
 import { store, connectClient } from '../store';
 import reducer from '../reducers';
 import {
@@ -10,11 +10,13 @@ import {
   authorized,
   unauthorized
 } from '../actions';
+import { mockMutatorGetter } from '../../__mocks__/keycloak-mock';
 
 describe('Redux store ', () => {
   let state: StoreState;
   let client: Client;
   configureClient();
+  const mockMutator = mockMutatorGetter();
   describe('actions', () => {
     beforeEach(() => {
       state = store.getState();
@@ -73,18 +75,21 @@ describe('Redux store ', () => {
   });
   describe('is connected to the client and ', () => {
     beforeAll(() => {
+      mockMutator.resetMock();
       client = createKeycloakClient();
       connectClient(client);
     });
     it('onAuthChange changes store', () => {
       reducer(state, unauthorized());
+      const user = mockMutator.createValidUserData();
+      mockMutator.setUser(user);
       client.onAuthChange(true);
       const expectedAuthenticatedState = {
         ...state,
         status: ClientStatus.AUTHORIZED,
         initialized: true,
         authenticated: true,
-        user: undefined // because client does not have an user
+        user // because client does not have an user
       };
       expect(store.getState()).toEqual(expectedAuthenticatedState);
       client.onAuthChange(false);
@@ -92,7 +97,8 @@ describe('Redux store ', () => {
         ...expectedAuthenticatedState,
         status: ClientStatus.UNAUTHORIZED,
         initialized: true,
-        authenticated: false
+        authenticated: false,
+        user: undefined
       };
       expect(store.getState()).toEqual(expectedUnauthenticatedState);
     });

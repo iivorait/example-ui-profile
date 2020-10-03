@@ -1,19 +1,21 @@
 import React, { useContext } from 'react';
 
-import { KeycloakContext } from '../clients/KeycloakProvider';
+import { ClientContext } from '../clients/ClientProvider';
 import LoginComponent from '../components/Login';
 import PageContent from '../components/PageContent';
 import ReduxConsumer from '../components/ReduxConsumer';
 import WithAuthDemo from '../components/WithAuthDemo';
-import KeycloakConsumer from '../components/KeycloakConsumer';
+import KeycloakConsumer from '../components/ClientConsumer';
+import { getClientConfig } from '../clients';
 
 const IndexPage = (): React.ReactElement => {
-  const keycloak = useContext(KeycloakContext);
+  const client = useContext(ClientContext);
+  const clientConfig = getClientConfig();
   return (
     <PageContent>
-      {!!keycloak && keycloak.client ? (
+      {!!client && client.client ? (
         <>
-          <h1>Keycloak-demo</h1>
+          <h1>Client-demo</h1>
           <p>
             Tässä demossa näytetään kirjautumisikkuna ja komponentteja, jotka
             kuuntelevat muutoksia kirjautumisessa.
@@ -23,7 +25,11 @@ const IndexPage = (): React.ReactElement => {
             headerista.
           </p>
           <p>Voit myös kirjatua ulos toisessa ikkunassa.</p>
-          <LoginComponent client={keycloak.client} />
+          <p>
+            Clientiksi on .env-filessä määritelty:{' '}
+            <strong>{clientConfig.type}</strong>
+          </p>
+          <LoginComponent client={client.client} />
           <ReduxConsumer />
           <WithAuthDemo />
           <KeycloakConsumer />

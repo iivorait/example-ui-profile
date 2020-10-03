@@ -3,10 +3,10 @@ import { Provider } from 'react-redux';
 
 import { store, connectClient } from './store';
 import { connected } from './actions';
-import { useKeycloak } from '../keycloak';
+import { useClient } from '../client';
 
 const StoreProvider: FC<React.PropsWithChildren<{}>> = ({ children }) => {
-  const client = useKeycloak();
+  const client = useClient();
   useEffect(() => {
     connectClient(client);
     store.dispatch(connected(client));

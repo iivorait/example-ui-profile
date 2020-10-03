@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Notification } from 'hds-react';
 
-import { useKeycloakErrorDetection } from '../clients/keycloak';
+import { useClientErrorDetection } from '../clients/client';
 import { ClientError } from '../clients';
 import styles from './styles.module.css';
 
@@ -9,7 +9,7 @@ const ErrorPrompt = (
   props: React.PropsWithChildren<{}>
 ): React.ReactElement | null => {
   const [dismissedError, setDismissedError] = useState<ClientError>(undefined);
-  const newError = useKeycloakErrorDetection();
+  const newError = useClientErrorDetection();
   const lastErrorType = dismissedError && dismissedError.type;
   const newErrorType = newError && newError.type;
   if (lastErrorType === newErrorType) {

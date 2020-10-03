@@ -1,5 +1,6 @@
 export type User = Record<string, string | number | boolean>;
 export type Token = string | undefined;
+export type ClientType = 'keycloak' | 'oidc';
 export type EventPayload =
   | User
   | undefined
@@ -37,12 +38,14 @@ export const ClientStatus = {
 export type ClientStatusId = typeof ClientStatus[keyof typeof ClientStatus];
 
 export const ClientEvent = {
-  USER_EXPIRED: 'USER_EXPIRED',
-  USER_EXPIRING: 'USER_EXPIRING',
+  TOKEN_EXPIRED: 'TOKEN_EXPIRED',
+  TOKEN_EXPIRING: 'TOKEN_EXPIRING',
   ERROR: 'ERROR',
   STATUS_CHANGE: 'STATUS_CHANGE',
   AUTHORIZATION_TERMINATED: 'AUTHORIZATION_TERMINATED',
   LOGGING_OUT: 'LOGGING_OUT',
+  CLIENT_READY: 'CLIENT_READY',
+  CLIENT_AUTH_SUCCESS: 'CLIENT_AUTH_SUCCESS',
   ...ClientStatus
 } as const;
 
@@ -53,7 +56,8 @@ export const ClientError = {
   AUTH_ERROR: 'AUTH_ERROR',
   AUTH_REFRESH_ERROR: 'AUTH_REFRESH_ERROR',
   LOAD_ERROR: 'LOAD_ERROR',
-  UNEXPECTED_AUTH_CHANGE: 'UNEXPECTED_AUTH_CHANGE'
+  UNEXPECTED_AUTH_CHANGE: 'UNEXPECTED_AUTH_CHANGE',
+  USER_DATA_ERROR: 'USER_DATA_ERROR'
 } as const;
 
 export type ClientError = { type: string; message: string } | undefined;
@@ -78,7 +82,6 @@ export interface ClientProps {
   /**
    * The redirect URI of your client application to receive a response from the OIDC/OAuth2 provider.
    * Not needed for keycloak client. Only for oidc-react.
-   * Default: undefined
    */
   callbackPath: string | undefined;
   /**
@@ -92,12 +95,10 @@ export interface ClientProps {
   silentAuthPath?: string;
   /**
    * The type of response desired from the OIDC/OAuth2 provider.
-   * Default: 'id_token token'
    */
   responseType?: string;
   /**
    * The scope being requested from the OIDC/OAuth2 provider.
-   * Default: 'profile'
    */
   scope?: string;
   /**
@@ -115,15 +116,18 @@ export interface ClientProps {
   /**
    * Specifies an action to do on load. Supported values are login-required or check-sso.
    * Only for keycloak client.
-   * Default: 'check-sso'
    */
   loginType: 'check-sso' | 'login-required' | undefined;
   /**
    * Set the OpenID Connect flow. Valid values are standard, implicit or hybrid.
    * Only for keycloak client.
-   * Default: 'hybrid'
+   * Default: 'standard'
    */
   flow: 'standard' | 'implicit' | 'hybrid' | undefined;
+  /**
+   * Type of the client
+   */
+  type: ClientType;
 }
 
 type EventHandlers = {
@@ -242,7 +246,6 @@ export const createClient = (): ClientFactory => {
   };
 };
 
-export type ClientType = 'keycloak' | 'oidc';
 let config: ClientProps;
 
 export function setClientConfig(newConfig: ClientProps): ClientProps {

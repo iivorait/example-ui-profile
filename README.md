@@ -12,11 +12,18 @@ Included in this demo app:
 Clients dispatch events and trigger changes which then trigger re-rendering of the components using clients.
 
 ## using oidc-client
-Client swapping is not a parameter, it has to be done by code change
-```javascript
-// in src/clients/keycloak.ts
-import { getClient as getOidcClient } from './oidc-react';
-// change getClient() -> getOidcClient() in useKeycloak() and useKeycloakErrorDetection()
+Used client type is defined in .env.
+Settings for keycloak
+```yml
+REACT_APP_OIDC_CLIENT_TYPE="keycloak"
+REACT_APP_OIDC_SILENT_AUTH_PATH="/silent-check-sso.html"
+REACT_APP_OIDC_CALLBACK_PATH="/"
+```
+Settings for oidc-react
+```yml
+REACT_APP_OIDC_CLIENT_TYPE="oidc"
+REACT_APP_OIDC_SILENT_AUTH_PATH="/silent_renew.html"
+REACT_APP_OIDC_CALLBACK_PATH="/callback"
 ```
 
 

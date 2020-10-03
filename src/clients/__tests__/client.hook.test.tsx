@@ -1,21 +1,20 @@
 import React from 'react';
 import { mount, ReactWrapper } from 'enzyme';
 import { act } from 'react-dom/test-utils';
-import MockedKeyCloak from 'keycloak-js';
 import { useSelector } from 'react-redux';
 import { useKeycloak, useKeycloakErrorDetection, getClient } from '../keycloak';
 import { Client, ClientError, ClientStatus } from '..';
 import {
-  MockMutator,
   InstanceIdentifier,
   ClientValues,
   getClientDataFromComponent,
   matchClientDataWithComponent,
   configureClient
-} from '.';
-import { KeycloakProvider, KeycloakContext } from '../KeycloakProvider';
+} from '../__mocks__';
+import { ClientProvider, ClientContext } from '../ClientProvider';
 import StoreProvider from '../redux/StoreProvider';
 import { StoreState } from '../redux';
+import { mockMutatorGetter } from '../__mocks__/keycloak-mock';
 
 const ClientDataRenderer = ({
   client,
@@ -51,13 +50,13 @@ const KeycloakConsumer = ({
   id
 }: InstanceIdentifier): React.ReactElement | null => {
   return (
-    <KeycloakContext.Consumer>
+    <ClientContext.Consumer>
       {(value): React.ReactElement | null => {
         const client: Client = (value && value.client) as Client;
         callback({ id, client });
         return <ClientDataRenderer id={id} client={client} />;
       }}
-    </KeycloakContext.Consumer>
+    </ClientContext.Consumer>
   );
 };
 
@@ -89,9 +88,7 @@ describe('Keycloak consumers ', () => {
   let dom: ReactWrapper;
   configureClient();
   const nonHookClient = getClient();
-  const mockMutator = (MockedKeyCloak(
-    'returnMockMutator'
-  ) as unknown) as MockMutator;
+  const mockMutator = mockMutatorGetter();
 
   const getComponentValues = (selector: string): ClientValues | undefined =>
     getClientDataFromComponent(dom, selector);
@@ -136,7 +133,7 @@ describe('Keycloak consumers ', () => {
 
   const mountDom = (): void => {
     dom = mount(
-      <KeycloakProvider>
+      <ClientProvider>
         <StoreProvider>
           <div>
             <KeyCloakHookRenderer callback={callback} id="1" />
@@ -147,7 +144,7 @@ describe('Keycloak consumers ', () => {
             <KeycloakReduxConsumer id="redux" />
           </div>
         </StoreProvider>
-      </KeycloakProvider>
+      </ClientProvider>
     );
   };
   beforeAll(async () => {
@@ -160,10 +157,13 @@ describe('Keycloak consumers ', () => {
     await act(async () => {
       mockMutator.resetMock();
       nonHookClient.setError(undefined);
-      mockMutator.setUser({});
+      mockMutator.setUser();
       nonHookClient.onAuthChange(false);
     });
     dom.update();
+  });
+  afterEach(() => {
+    nonHookClient.clearSession();
   });
   describe('have same instance ', () => {
     it('with same values', async () => {

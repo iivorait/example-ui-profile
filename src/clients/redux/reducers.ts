@@ -18,7 +18,7 @@ const reducer: Reducer = (state, action): StoreState => {
         authenticated,
         initialized
       };
-    case ClientEvent.USER_EXPIRED:
+    case ClientEvent.TOKEN_EXPIRED:
       return {
         ...state,
         user: undefined,

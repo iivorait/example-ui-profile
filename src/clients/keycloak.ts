@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from 'react';
-import Keycloak from 'keycloak-js';
+import Keycloak, { KeycloakTokenParsed } from 'keycloak-js';
 
 import {
   Client,
@@ -13,10 +13,12 @@ import {
   Token,
   getClientConfig,
   hasValidClientConfig,
-  getLocationBasedUri
+  getLocationBasedUri,
+  ClientProps
 } from './index';
 
-function setSessionStorageTokens({
+// todo: remove setSessionStorageTokens, getSessionStorageTokens if keycloak server does not use them
+export function setSessionStorageTokens({
   token,
   idToken,
   refreshToken
@@ -42,6 +44,64 @@ export function getSessionStorageTokens(): {
   };
 }
 
+function getLocalStorageId(config: ClientProps, useType: string): string {
+  return `${config.clientId}-${useType}`;
+}
+
+export function getUserFromToken(
+  tokenParsed: KeycloakTokenParsed
+): User | undefined {
+  if (!tokenParsed || !tokenParsed.session_state) {
+    return undefined;
+  }
+  const userData = tokenParsed as User;
+  if (!userData.name) {
+    return undefined;
+  }
+  /* eslint-disable @typescript-eslint/camelcase */
+  return {
+    name: userData.name,
+    given_name: userData.given_name,
+    family_name: userData.family_name,
+    email: userData.email
+  };
+  /* eslint-enable @typescript-eslint/camelcase */
+}
+
+export function saveUserToLocalStorage(
+  token?: KeycloakTokenParsed,
+  user?: User
+): void {
+  const storageId = getLocalStorageId(getClientConfig(), 'userData');
+  const identifier = (token && token.session_state) || '';
+  const data = JSON.stringify({
+    identifier,
+    user: user || ''
+  });
+  localStorage.setItem(storageId, data);
+}
+
+export function getUserFromLocalStorage(
+  token: KeycloakTokenParsed
+): User | undefined {
+  const storageId = getLocalStorageId(getClientConfig(), 'userData');
+  const identifier = (token && token.session_state) || '';
+  const rawData = localStorage.getItem(storageId);
+  if (!rawData) {
+    return undefined;
+  }
+  const data = JSON.parse(rawData);
+  if (!identifier || !data.identifier || data.identifier !== identifier) {
+    localStorage.setItem(storageId, '');
+    return undefined;
+  }
+  if (!data.user || !data.user.given_name) {
+    localStorage.setItem(storageId, '');
+    return undefined;
+  }
+  return data.user;
+}
+
 let client: Client | null = null;
 
 function bindEvents(
@@ -50,12 +110,14 @@ function bindEvents(
     onAuthChange: Client['onAuthChange'];
     setError: ClientFactory['setError'];
     eventTrigger: ClientFactory['eventTrigger'];
+    clearSession: Client['clearSession'];
   }
 ): void {
-  const { onAuthChange, setError, eventTrigger } = eventFunctions;
+  const { onAuthChange, setError, eventTrigger, clearSession } = eventFunctions;
   /* eslint-disable no-param-reassign */
-  keycloak.onReady = (authenticated): boolean => onAuthChange(!!authenticated);
-  keycloak.onAuthSuccess = (): boolean => onAuthChange(true);
+  keycloak.onReady = (): void => eventTrigger(ClientEvent.CLIENT_READY);
+  keycloak.onAuthSuccess = (): void =>
+    eventTrigger(ClientEvent.CLIENT_AUTH_SUCCESS);
   keycloak.onAuthError = (errorData): void => {
     onAuthChange(false);
     setError({
@@ -70,8 +132,11 @@ function bindEvents(
       message: ''
     });
   };
-  keycloak.onAuthLogout = (): boolean => onAuthChange(false);
-  keycloak.onTokenExpired = (): void => eventTrigger(ClientEvent.USER_EXPIRED);
+  keycloak.onAuthLogout = (): void => {
+    clearSession();
+    onAuthChange(false);
+  };
+  keycloak.onTokenExpired = (): void => eventTrigger(ClientEvent.TOKEN_EXPIRED);
   /* eslint-enable no-param-reassign */
 }
 
@@ -89,7 +154,6 @@ export function createKeycloakClient(): Client {
     clientId: clientConfig.clientId
   };
   const keycloak: Keycloak.KeycloakInstance = Keycloak(config);
-  const savedTokens = getSessionStorageTokens();
   const {
     eventTrigger,
     getStoredUser,
@@ -105,12 +169,32 @@ export function createKeycloakClient(): Client {
     setError
   } = clientFunctions;
 
+  const saveUserData = (user: User | undefined): void => {
+    saveUserToLocalStorage(keycloak.tokenParsed, user);
+    setStoredUser(user);
+  };
+
   const getUser: Client['getUser'] = () => {
-    if (isAuthenticated()) {
-      const userData = keycloak.tokenParsed as User;
-      if (userData && userData.email && userData.session_state) {
-        return userData;
-      }
+    if (!isAuthenticated()) {
+      return undefined;
+    }
+    const storedUser =
+      getStoredUser() ||
+      getUserFromLocalStorage(keycloak.tokenParsed as KeycloakTokenParsed);
+    return storedUser || undefined;
+  };
+
+  const clearSession: Client['clearSession'] = () => {
+    saveUserData(undefined);
+  };
+
+  const storeUserDataFromToken = (): User | undefined => {
+    const userInToken = getUserFromToken(
+      keycloak.tokenParsed as KeycloakTokenParsed
+    );
+    if (userInToken) {
+      saveUserData(userInToken);
+      return userInToken;
     }
     return undefined;
   };
@@ -119,6 +203,17 @@ export function createKeycloakClient(): Client {
     if (isInitialized() && authenticated === isAuthenticated()) {
       return false;
     }
+    if (authenticated && !getUser()) {
+      const userInToken = storeUserDataFromToken();
+      if (!userInToken) {
+        setError({
+          type: ClientError.USER_DATA_ERROR,
+          message: 'user data not found in token or localstorage'
+        });
+      }
+    } else {
+      clearSession();
+    }
     const statusChanged = setStatus(
       authenticated ? ClientStatus.AUTHORIZED : ClientStatus.UNAUTHORIZED
     );
@@ -126,10 +221,6 @@ export function createKeycloakClient(): Client {
       eventTrigger(getStatus(), getUser());
     }
     return true;
-  };
-
-  const clearSession: Client['clearSession'] = () => {
-    setSessionStorageTokens({ token: '', refreshToken: '', idToken: '' });
   };
 
   const login: Client['login'] = () => {
@@ -184,28 +275,25 @@ export function createKeycloakClient(): Client {
       const keyCloakPromise = keycloak.init({
         onLoad: clientConfig.loginType,
         flow: clientConfig.flow,
-        token: savedTokens.token,
-        refreshToken: savedTokens.refreshToken,
-        idToken: savedTokens.idToken,
         enableLogging: clientConfig.enableLogging,
-        silentCheckSsoRedirectUri: getLocationBasedUri('/silent-check-sso.html')
+        silentCheckSsoRedirectUri: getLocationBasedUri(
+          clientConfig.silentAuthPath
+        )
       });
 
       keyCloakPromise
         .then((authenticated): void => {
-          onAuthChange(authenticated);
           if (authenticated) {
-            setSessionStorageTokens({
-              token: keycloak.token,
-              idToken: keycloak.idToken,
-              refreshToken: keycloak.refreshToken
-            });
-            resolve(keycloak.tokenParsed as User);
+            storeUserDataFromToken();
+            onAuthChange(true);
+            resolve(getUser());
             return;
           }
+          clearSession();
           resolve(undefined);
         })
         .catch((e?: {}) => {
+          clearSession();
           onAuthChange(false);
           reject(e);
         });
@@ -241,7 +329,7 @@ export function createKeycloakClient(): Client {
     onAuthChange,
     ...clientFunctions
   };
-  bindEvents(keycloak, { onAuthChange, eventTrigger, setError });
+  bindEvents(keycloak, { onAuthChange, eventTrigger, setError, clearSession });
   return client;
 }
 

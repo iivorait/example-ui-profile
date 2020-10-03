@@ -52,11 +52,11 @@ function bindEvents(
     });
   });
   manager.events.addAccessTokenExpired((): void =>
-    eventTrigger(ClientEvent.USER_EXPIRED)
+    eventTrigger(ClientEvent.TOKEN_EXPIRED)
   );
 }
 
-export function createOIDCClient(): Client {
+export function createOidcClient(): Client {
   if (!hasValidClientConfig()) {
     const errorMessage = 'Invalid client config';
     // eslint-disable-next-line no-console
@@ -72,6 +72,7 @@ export function createOIDCClient(): Client {
     client_id: clientConfig.clientId,
     redirect_uri: getLocationBasedUri(clientConfig.callbackPath),
     response_type: clientConfig.responseType,
+    scope: clientConfig.scope,
     silent_redirect_uri: getLocationBasedUri(clientConfig.silentAuthPath),
     post_logout_redirect_uri: getLocationBasedUri(clientConfig.logoutPath)
   };
@@ -101,7 +102,7 @@ export function createOIDCClient(): Client {
     if (isAuthenticated()) {
       const user = (getStoredUser() as unknown) as User;
       const userData = user && user.profile;
-      if (userData && userData.email && userData.session_state) {
+      if (userData && userData.name && userData.session_state) {
         return userData;
       }
     }
@@ -252,7 +253,7 @@ export function getClient(): Client {
   if (client) {
     return client;
   }
-  client = createOIDCClient();
+  client = createOidcClient();
   return client;
 }
 

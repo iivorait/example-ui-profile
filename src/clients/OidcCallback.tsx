@@ -1,7 +1,7 @@
 import React from 'react';
 import { Redirect } from 'react-router';
 
-import { useOidcCallback } from './oidc-react';
+import { useClientCallback } from './client';
 
 export type OidcCallbackProps = {
   successRedirect: string;
@@ -9,7 +9,7 @@ export type OidcCallbackProps = {
 };
 
 const OidcCallback = (props: OidcCallbackProps): React.ReactElement => {
-  const client = useOidcCallback();
+  const client = useClientCallback();
   const initialized = client.isInitialized();
   const authenticated = client.isAuthenticated();
   if (!initialized) {

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Navigation } from 'hds-react';
 
-import { useKeycloak } from '../clients/keycloak';
+import { useClient } from '../clients/client';
 
 type LanguageOption = { code: string; label: string };
 
@@ -12,10 +12,10 @@ const Header = (): React.ReactElement => {
     { code: 'en', label: 'English' }
   ];
 
-  const keycloak = useKeycloak();
-  const authenticated = keycloak.isAuthenticated();
-  const initialized = keycloak.isInitialized();
-  const user = keycloak.getUser();
+  const client = useClient();
+  const authenticated = client.isAuthenticated();
+  const initialized = client.isInitialized();
+  const user = client.getUser();
 
   const [language, setLanguage] = useState(languageOptions[0]);
   const [active, setActive] = useState<'link' | 'button' | 'dropdown'>();
@@ -87,7 +87,7 @@ const Header = (): React.ReactElement => {
           <Navigation.User
             authenticated={authenticated}
             label="Sign in"
-            onSignIn={(): void => keycloak.login()}
+            onSignIn={(): void => client.login()}
             userName={user ? `${user.given_name} ${user.family_name}` : ''}>
             <Navigation.Item
               label="Your profile"
@@ -98,7 +98,7 @@ const Header = (): React.ReactElement => {
             <Navigation.Item
               as="button"
               type="button"
-              onClick={(): void => keycloak.logout()}
+              onClick={(): void => client.logout()}
               variant="secondary"
               label="Sign out"
             />
