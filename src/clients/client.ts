@@ -47,9 +47,7 @@ export function useClient(clientType?: ClientType): Client {
   return clientFromRef;
 }
 
-export const useClientErrorDetection = (
-  clientType?: ClientType
-): ClientError => {
+export function useClientErrorDetection(clientType?: ClientType): ClientError {
   const clientRef: React.Ref<Client> = useRef(getClient(clientType));
   const clientFromRef: Client = clientRef.current as Client;
   const [error, setError] = useState<ClientError>(undefined);
@@ -88,7 +86,7 @@ export const useClientErrorDetection = (
     };
   }, [clientFromRef]);
   return error;
-};
+}
 
 export function useClientCallback(clientType?: ClientType): Client {
   const clientRef: React.Ref<Client> = useRef(getClient(clientType));

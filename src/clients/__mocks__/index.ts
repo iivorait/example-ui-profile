@@ -1,5 +1,7 @@
 /* eslint-disable @typescript-eslint/camelcase */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { ReactWrapper } from 'enzyme';
+import { UserManager } from 'oidc-client';
 import {
   Client,
   ClientEvent,
@@ -9,6 +11,8 @@ import {
   Token
 } from '..';
 import config from '../../config';
+
+type ClientInstance = Keycloak.KeycloakInstance | UserManager;
 
 export type MockMutator = {
   setClientInitPayload: (
@@ -22,6 +26,7 @@ export type MockMutator = {
   getTokenParsed: () => Record<string, unknown>;
   setTokenParsed: (props: {}) => void;
   setUser: (props?: {}) => void;
+  getUser: () => {} | undefined;
   getTokens: () => Tokens;
   getInitCallCount: () => number;
   initCalled: () => void;
@@ -37,8 +42,8 @@ export type MockMutator = {
   getLoginCallCount: () => number;
   getLogoutCallCount: () => number;
   setTokens: (newTokens: {}) => {};
-  getInstance: () => Keycloak.KeycloakInstance;
-  setInstance: (keycloak: Keycloak.KeycloakInstance) => void;
+  getInstance: () => ClientInstance;
+  setInstance: (instance: ClientInstance) => void;
   createValidUserData: (props?: {}) => {
     email: string;
     name: string;
@@ -115,13 +120,13 @@ export const matchClientDataWithComponent = (
   return values;
 };
 
-export function configureClient(overrides?: ClientProps): ClientProps {
+export const configureClient = (overrides?: ClientProps): ClientProps => {
   return setClientConfig({ ...config.client, ...overrides });
-}
+};
 
-export function createEventListeners(
+export const createEventListeners = (
   addEventListener: Function
-): EventListeners {
+): EventListeners => {
   const listeners: Partial<EventListeners> = {};
   const disposers: Function[] = [];
   Object.keys(ClientEvent).forEach((eventType: string): void => {
@@ -153,7 +158,7 @@ export function createEventListeners(
     getLastCallPayload,
     getCallCount
   };
-}
+};
 
 // imports in setUpTests.ts require "mock" prefix, therefore createMockMutator would be invalid
 export const mockMutatorCreator = (): MockMutator => {
@@ -173,7 +178,7 @@ export const mockMutatorCreator = (): MockMutator => {
     idToken: undefined,
     refreshToken: undefined
   };
-  let clientInstance: Keycloak.KeycloakInstance;
+  let clientInstance: ClientInstance;
   /* eslint-enable @typescript-eslint/no-unused-vars */
 
   const setClientInitPayload: MockMutator['setClientInitPayload'] = (
@@ -217,14 +222,16 @@ export const mockMutatorCreator = (): MockMutator => {
       name: undefined,
       given_name: undefined,
       family_name: undefined,
-      email: undefined,
-      session_state: `session_state-${Date.now()}`
+      email: undefined
     };
   };
 
-  const setUser: MockMutator['setUser'] = (props?: {}): void => {
+  const setUser: MockMutator['setUser'] = (props?) => {
     user = props || createEmptyUser();
     setTokenParsed(user);
+  };
+  const getUser: MockMutator['getUser'] = () => {
+    return user;
   };
   const getInitCallCount: MockMutator['getInitCallCount'] = () => {
     return initCallCount;
@@ -298,6 +305,7 @@ export const mockMutatorCreator = (): MockMutator => {
     getTokenParsed,
     setTokenParsed,
     setUser,
+    getUser,
     getInitCallCount,
     getCreationCount,
     resetMock,

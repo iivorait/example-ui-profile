@@ -26,6 +26,16 @@ REACT_APP_OIDC_SILENT_AUTH_PATH="/silent_renew.html"
 REACT_APP_OIDC_CALLBACK_PATH="/callback"
 ```
 
+## Oidc and keyclock client differences
+Client libraries trigger different events when client status changes or an error occurs.
+
+CLIENT_READY:
+  - oidc does not trigger this event. Keycloak triggers this when onReady() is called. This is same as either AUTHORIZE or UNAUTHORIZED event.
+TOKEN_EXPIRING:
+  - triggered only by oidc
+ERROR event with type AUTH_ERROR:
+  - Oidc trigger the event if silent signin results in error, but not if error is 'login_required'. Keycloak triggers this error when onAuthError() is called
+
 
 ## Config
 use .env -files. Some values are client specific. Default client is keycloak and relevant settings are:

@@ -14,6 +14,8 @@ import {
 } from '../index';
 import { createKeycloakClient } from '../keycloak';
 import { mockMutatorGetter } from '../__mocks__/keycloak-mock';
+import { createOidcClient } from '../oidc-react';
+import { mockMutatorGetterOidc } from '../__mocks__/oidc-react-mock';
 // import { createOidcClient } from '../oidc-react';
 
 // Allows for awaiting promises without try-catch-blocks
@@ -29,15 +31,21 @@ async function to(promise: Promise<unknown>) {
 }
 
 describe('Client ', () => {
-  const clientTypes: ClientType[] = ['keycloak'];
+  const clientTypes: ClientType[] = ['keycloak', 'oidc'];
   clientTypes.forEach(clientType => {
     describe(`Client ${clientType}`, () => {
       let client: Client;
       configureClient();
-      const mockMutator = mockMutatorGetter();
+      const mockMutator =
+        clientType === 'keycloak'
+          ? mockMutatorGetter()
+          : mockMutatorGetterOidc();
       let eventListeners: EventListeners;
       function createNewClient(): Client {
-        client = createKeycloakClient();
+        client =
+          clientType === 'keycloak'
+            ? createKeycloakClient()
+            : createOidcClient();
         return client;
       }
 
@@ -76,6 +84,16 @@ describe('Client ', () => {
           mockMutator.setClientInitPayload(undefined, { error: 1 });
           await to(client.init());
           expect(client.getStatus()).toBe(ClientStatus.UNAUTHORIZED);
+          if (clientType === 'oidc') {
+            expect(eventListeners.getCallCount(ClientEvent.ERROR)).toBe(1);
+            const error: ClientError = (eventListeners.getLastCallPayload(
+              ClientEvent.ERROR
+            ) as unknown) as ClientError;
+            expect(error).toBeDefined();
+            if (error) {
+              expect(error.type).toBe(ClientError.AUTH_ERROR);
+            }
+          }
         });
         it('success results in AUTHORIZED status', async () => {
           expect(client.getStatus()).toBe(ClientStatus.NONE);

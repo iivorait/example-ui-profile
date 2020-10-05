@@ -135,7 +135,20 @@ type EventHandlers = {
   eventTrigger: (eventType: ClientEventId, payload?: EventPayload) => void;
 };
 
-export const createEventHandling = (): EventHandlers => {
+export type ClientFactory = {
+  addListener: Client['addListener'];
+  eventTrigger: EventHandlers['eventTrigger'];
+  getStoredUser: () => User | undefined;
+  setStoredUser: (newUser: User | undefined) => void;
+  getStatus: Client['getStatus'];
+  setStatus: Client['setStatus'];
+  getError: Client['getError'];
+  setError: Client['setError'];
+  isInitialized: Client['isInitialized'];
+  isAuthenticated: Client['isAuthenticated'];
+} & EventHandlers;
+
+export function createEventHandling(): EventHandlers {
   const listeners: Map<ClientEventId, Set<EventListener>> = new Map();
   const getListenerListForEventType = (
     eventType: ClientEventId
@@ -169,22 +182,9 @@ export const createEventHandling = (): EventHandlers => {
     addListener,
     eventTrigger
   };
-};
+}
 
-export type ClientFactory = {
-  addListener: Client['addListener'];
-  eventTrigger: EventHandlers['eventTrigger'];
-  getStoredUser: () => User | undefined;
-  setStoredUser: (newUser: User | undefined) => void;
-  getStatus: Client['getStatus'];
-  setStatus: Client['setStatus'];
-  getError: Client['getError'];
-  setError: Client['setError'];
-  isInitialized: Client['isInitialized'];
-  isAuthenticated: Client['isAuthenticated'];
-} & EventHandlers;
-
-export const createClient = (): ClientFactory => {
+export function createClient(): ClientFactory {
   let status: ClientStatusId = ClientStatus.NONE;
   let error: ClientError;
   let user: User | undefined;
@@ -244,7 +244,7 @@ export const createClient = (): ClientFactory => {
     isInitialized,
     isAuthenticated
   };
-};
+}
 
 let config: ClientProps;
 

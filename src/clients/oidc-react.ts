@@ -35,6 +35,9 @@ function bindEvents(
   }
 ): void {
   const { onAuthChange, setError, eventTrigger } = eventFunctions;
+  manager.events.addUserLoaded((): void =>
+    eventTrigger(ClientEvent.CLIENT_AUTH_SUCCESS)
+  );
   manager.events.addUserUnloaded((): boolean => onAuthChange(false));
   manager.events.addUserSignedOut((): boolean => {
     return onAuthChange(false);
@@ -45,7 +48,6 @@ function bindEvents(
       ? ((renewError as unknown) as Error)
       : undefined;
     const message = errorObj ? errorObj.message : '';
-    eventTrigger(ClientStatus.UNAUTHORIZED, { error: message });
     setError({
       type: ClientError.AUTH_REFRESH_ERROR,
       message
@@ -53,6 +55,9 @@ function bindEvents(
   });
   manager.events.addAccessTokenExpired((): void =>
     eventTrigger(ClientEvent.TOKEN_EXPIRED)
+  );
+  manager.events.addAccessTokenExpiring((): void =>
+    eventTrigger(ClientEvent.TOKEN_EXPIRING)
   );
 }
 
@@ -168,7 +173,11 @@ export function createOidcClient(): Client {
     if (isInitialized()) {
       return Promise.resolve(undefined);
     }
-    return init();
+    return new Promise((resolve, reject) => {
+      init()
+        .then(() => resolve(getUser()))
+        .catch(e => reject(e));
+    });
   };
 
   const login: Client['login'] = () => {
@@ -177,13 +186,17 @@ export function createOidcClient(): Client {
 
   const logout: Client['logout'] = () => {
     eventTrigger(ClientEvent.LOGGING_OUT);
+    setStoredUser(undefined);
     manager.signoutRedirect();
   };
 
   const clearSession: Client['clearSession'] = () => false;
 
   const handleCallback: Client['handleCallback'] = () => {
-    return new Promise((resolve, reject) => {
+    if (initPromise) {
+      return initPromise;
+    }
+    initPromise = new Promise((resolve, reject) => {
       setStatus(ClientStatus.INITIALIZING);
       manager
         .signinRedirectCallback()
@@ -197,13 +210,14 @@ export function createOidcClient(): Client {
         })
         .catch(e => {
           setError({
-            type: ClientError.AUTH_ERROR, // todo: new error type
+            type: ClientError.AUTH_ERROR,
             message: e && e.toString()
           });
           onAuthChange(false);
           reject(e);
         });
     });
+    return initPromise;
   };
 
   const loadUserProfile: Client['loadUserProfile'] = () => {
@@ -257,7 +271,7 @@ export function getClient(): Client {
   return client;
 }
 
-export const useOidc = (): Client => {
+export function useOidc(): Client {
   const clientRef: React.Ref<Client> = useRef(getClient());
   const clientFromRef: Client = clientRef.current as Client;
   const [, setStatus] = useState<ClientStatusId>(clientFromRef.getStatus());
@@ -285,9 +299,9 @@ export const useOidc = (): Client => {
     };
   }, [clientFromRef]);
   return clientFromRef;
-};
+}
 
-export const useOidcErrorDetection = (): ClientError => {
+export function useOidcErrorDetection(): ClientError {
   const clientRef: React.Ref<Client> = useRef(getClient());
   const clientFromRef: Client = clientRef.current as Client;
   const [error, setError] = useState<ClientError>(undefined);
@@ -319,7 +333,7 @@ export const useOidcErrorDetection = (): ClientError => {
     };
   }, [clientFromRef]);
   return error;
-};
+}
 
 export const useOidcCallback = (): Client => {
   const clientRef: React.Ref<Client> = useRef(getClient());

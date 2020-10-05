@@ -6,7 +6,7 @@ import {
   createEventListeners
 } from '../__mocks__';
 import { ClientStatus, Client, ClientEvent, ClientError } from '../index';
-import { createKeycloakClient } from '../keycloak';
+import { createKeycloakClient, getUserFromLocalStorage } from '../keycloak';
 import { mockMutatorGetter } from '../__mocks__/keycloak-mock';
 
 // Allows for awaiting promises without try-catch-blocks
@@ -21,28 +21,37 @@ async function to(promise: Promise<unknown>) {
   }
 }
 
-describe('Client ', () => {
+describe('Keycloak client ', () => {
   let client: Client;
   configureClient();
   const mockMutator = mockMutatorGetter();
   let eventListeners: EventListeners;
+  let instance: Keycloak.KeycloakInstance;
 
   function createNewClient(): Client {
     client = createKeycloakClient();
     return client;
   }
 
+  function initTests(): void {
+    mockMutator.resetMock();
+    client = createNewClient();
+    eventListeners = createEventListeners(client.addListener);
+    instance = mockMutator.getInstance() as Keycloak.KeycloakInstance;
+  }
+
+  function clearTests(): void {
+    eventListeners.dispose();
+  }
+
   describe('event listeners work and ', () => {
     beforeEach(() => {
-      mockMutator.resetMock();
-      client = createNewClient();
-      eventListeners = createEventListeners(client.addListener);
+      initTests();
     });
     afterEach(() => {
-      eventListeners.dispose();
+      clearTests();
     });
     it('keycloak.onReady() and onAuthSuccess() trigger events', async () => {
-      const instance = mockMutator.getInstance();
       expect(eventListeners.getCallCount(ClientEvent.CLIENT_READY)).toBe(0);
       expect(eventListeners.getCallCount(ClientEvent.CLIENT_AUTH_SUCCESS)).toBe(
         0
@@ -63,7 +72,6 @@ describe('Client ', () => {
       mockMutator.setUser(mockMutator.createValidUserData({ email }));
       await to(client.init());
       expect(client.getStatus()).toBe(ClientStatus.AUTHORIZED);
-      const instance = mockMutator.getInstance();
       if (instance.onAuthLogout) {
         instance.onAuthLogout();
       }
@@ -71,7 +79,6 @@ describe('Client ', () => {
     });
     it('keycloak.onAuthError() and onAuthRefreshError() set and trigger error', async () => {
       mockMutator.setClientInitPayload(undefined, { error: 1 });
-      const instance = mockMutator.getInstance();
       expect(eventListeners.getCallCount(ClientEvent.ERROR)).toBe(0);
       if (instance.onAuthError) {
         instance.onAuthError({
@@ -92,12 +99,40 @@ describe('Client ', () => {
       expect(eventListeners.getCallCount(ClientEvent.ERROR)).toBe(2);
     });
     it('keycloak.onTokenExpired() triggers TOKEN_EXPIRED event', async () => {
-      const instance = mockMutator.getInstance();
       expect(eventListeners.getCallCount(ClientEvent.TOKEN_EXPIRED)).toBe(0);
       if (instance.onTokenExpired) {
         instance.onTokenExpired();
       }
       expect(eventListeners.getCallCount(ClientEvent.TOKEN_EXPIRED)).toBe(1);
+    });
+  });
+  describe('user data is ', () => {
+    beforeEach(() => {
+      initTests();
+    });
+    afterEach(() => {
+      clearTests();
+    });
+    it('stored after login and user is found in local storage and getUserProfile()', async () => {
+      const email = 'authorized@bar.com';
+      mockMutator.setUser(mockMutator.createValidUserData({ email }));
+      await to(client.init());
+      const token = mockMutator.getTokenParsed();
+      const storageUser = getUserFromLocalStorage(token);
+      expect(storageUser && storageUser.email).toBe(email);
+      const user = client.getUserProfile();
+      expect(user && user.email).toBe(email);
+    });
+    it('cleared when auth status is changed to false', async () => {
+      const email = 'authorized@bar.com';
+      mockMutator.setUser(mockMutator.createValidUserData({ email }));
+      await to(client.init());
+      client.onAuthChange(false);
+      const token = mockMutator.getTokenParsed();
+      const storageUser = getUserFromLocalStorage(token);
+      expect(storageUser).toBeUndefined();
+      const user = client.getUserProfile();
+      expect(user).toBeUndefined();
     });
   });
 });

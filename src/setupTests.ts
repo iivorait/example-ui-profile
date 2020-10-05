@@ -6,10 +6,15 @@ import { configure } from 'enzyme';
 import { GlobalWithFetchMock } from 'jest-fetch-mock';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import 'jest-localstorage-mock';
+import { UserManager, UserManagerSettings } from 'oidc-client';
 import {
   mockMutatorGetter,
   mockKeycloak
 } from './clients/__mocks__/keycloak-mock';
+import {
+  mockMutatorGetterOidc,
+  mockOidcUserManager
+} from './clients/__mocks__/oidc-react-mock';
 
 const customGlobal: GlobalWithFetchMock = global as GlobalWithFetchMock;
 // eslint-disable-next-line import/no-extraneous-dependencies
@@ -36,5 +41,21 @@ jest.mock('keycloak-js', () => {
     } as Keycloak.KeycloakInstance;
     mockMutator.setInstance(clientInstance);
     return clientInstance;
+  };
+});
+
+jest.mock('oidc-client', () => {
+  class MockUserManagerClass {
+    constructor(settings: UserManagerSettings) {
+      const mockMutator = mockMutatorGetterOidc();
+      const userManager = mockOidcUserManager(settings) as UserManager;
+      // console.log('userManager', userManager);
+      mockMutator.setInstance(userManager);
+      return userManager;
+    }
+  }
+  return {
+    ...(jest.requireActual('oidc-client') as {}),
+    UserManager: MockUserManagerClass
   };
 });

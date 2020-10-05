@@ -10,39 +10,11 @@ import {
   ClientError,
   createClient,
   ClientFactory,
-  Token,
   getClientConfig,
   hasValidClientConfig,
   getLocationBasedUri,
   ClientProps
 } from './index';
-
-// todo: remove setSessionStorageTokens, getSessionStorageTokens if keycloak server does not use them
-export function setSessionStorageTokens({
-  token,
-  idToken,
-  refreshToken
-}: {
-  token: Token;
-  idToken: Token;
-  refreshToken: Token;
-}): void {
-  localStorage.setItem('token', token || '');
-  localStorage.setItem('idToken', idToken || '');
-  localStorage.setItem('refreshToken', refreshToken || '');
-}
-
-export function getSessionStorageTokens(): {
-  token: Token;
-  idToken: Token;
-  refreshToken: Token;
-} {
-  return {
-    token: localStorage.getItem('token') || undefined,
-    idToken: localStorage.getItem('idToken') || undefined,
-    refreshToken: localStorage.getItem('refreshToken') || undefined
-  };
-}
 
 function getLocalStorageId(config: ClientProps, useType: string): string {
   return `${config.clientId}-${useType}`;
@@ -126,11 +98,11 @@ function bindEvents(
     });
   };
   keycloak.onAuthRefreshError = (): void => {
-    eventTrigger(ClientStatus.UNAUTHORIZED, { error: true });
-    setError({
+    const error = {
       type: ClientError.AUTH_REFRESH_ERROR,
       message: ''
-    });
+    };
+    setError(error);
   };
   keycloak.onAuthLogout = (): void => {
     clearSession();
@@ -174,14 +146,19 @@ export function createKeycloakClient(): Client {
     setStoredUser(user);
   };
 
+  const getUserData = (): User | undefined => {
+    return (
+      getStoredUser() ||
+      getUserFromLocalStorage(keycloak.tokenParsed as KeycloakTokenParsed) ||
+      undefined
+    );
+  };
+
   const getUser: Client['getUser'] = () => {
     if (!isAuthenticated()) {
       return undefined;
     }
-    const storedUser =
-      getStoredUser() ||
-      getUserFromLocalStorage(keycloak.tokenParsed as KeycloakTokenParsed);
-    return storedUser || undefined;
+    return getUserData();
   };
 
   const clearSession: Client['clearSession'] = () => {
@@ -203,15 +180,17 @@ export function createKeycloakClient(): Client {
     if (isInitialized() && authenticated === isAuthenticated()) {
       return false;
     }
-    if (authenticated && !getUser()) {
+    if (authenticated && !getUserData()) {
       const userInToken = storeUserDataFromToken();
       if (!userInToken) {
         setError({
           type: ClientError.USER_DATA_ERROR,
-          message: 'user data not found in token or localstorage'
+          message:
+            'user is logged in, but data not found in token or localstorage'
         });
       }
-    } else {
+    }
+    if (!authenticated) {
       clearSession();
     }
     const statusChanged = setStatus(
@@ -225,7 +204,7 @@ export function createKeycloakClient(): Client {
 
   const login: Client['login'] = () => {
     keycloak.login({
-      redirectUri: getLocationBasedUri('/'), // todo redirect back to page login was initiated.
+      redirectUri: getLocationBasedUri('/'), // todo when relevant: redirect back to page login was initiated.
       scope: clientConfig.scope
     });
   };
@@ -289,6 +268,7 @@ export function createKeycloakClient(): Client {
             resolve(getUser());
             return;
           }
+          onAuthChange(false);
           clearSession();
           resolve(undefined);
         })
@@ -341,7 +321,7 @@ export function getClient(): Client {
   return client;
 }
 
-export const useKeycloak = (): Client => {
+export function useKeycloak(): Client {
   const clientRef: React.Ref<Client> = useRef(getClient());
   const clientFromRef: Client = clientRef.current as Client;
   const [, setStatus] = useState<ClientStatusId>(clientFromRef.getStatus());
@@ -369,9 +349,9 @@ export const useKeycloak = (): Client => {
     };
   }, [clientFromRef]);
   return clientFromRef;
-};
+}
 
-export const useKeycloakErrorDetection = (): ClientError => {
+export function useKeycloakErrorDetection(): ClientError {
   const clientRef: React.Ref<Client> = useRef(getClient());
   const clientFromRef: Client = clientRef.current as Client;
   const [error, setError] = useState<ClientError>(undefined);
@@ -410,4 +390,4 @@ export const useKeycloakErrorDetection = (): ClientError => {
     };
   }, [clientFromRef]);
   return error;
-};
+}
