@@ -321,7 +321,6 @@ export function createKeycloakClient(): Client {
     ...clientFunctions
   };
   bindEvents(keycloak, { onAuthChange, eventTrigger, setError, clearSession });
-  console.log('client', client);
   return client;
 }
 
