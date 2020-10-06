@@ -17,7 +17,8 @@ import {
   ClientFactory,
   hasValidClientConfig,
   getClientConfig,
-  getLocationBasedUri
+  getLocationBasedUri,
+  getTokenUri
 } from './index';
 
 let client: Client | null = null;
@@ -87,6 +88,7 @@ export function createOidcClient(): Client {
     eventTrigger,
     getStoredUser,
     setStoredUser,
+    fetchApiToken,
     ...clientFunctions
   } = createClient();
 
@@ -246,6 +248,18 @@ export function createOidcClient(): Client {
     return getStoredUser();
   };
 
+  const getAccessToken: Client['getAccessToken'] = async () => {
+    const user = getStoredUser();
+    if (!user) {
+      throw new Error('getAccessToken: no user with access token');
+    }
+    const tokenResponse = await fetchApiToken(
+      getTokenUri(getClientConfig()),
+      user.access_token as string
+    );
+    return tokenResponse;
+  };
+
   client = {
     init,
     login,
@@ -257,6 +271,7 @@ export function createOidcClient(): Client {
     handleCallback,
     getOrLoadUser,
     onAuthChange,
+    getAccessToken,
     ...clientFunctions
   };
   bindEvents(manager, { onAuthChange, eventTrigger, setError });

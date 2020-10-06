@@ -1,6 +1,7 @@
 export type User = Record<string, string | number | boolean>;
 export type Token = string | undefined;
 export type ClientType = 'keycloak' | 'oidc';
+export type JWTPayload = string | Buffer | Record<string, {}>;
 export type EventPayload =
   | User
   | undefined
@@ -26,6 +27,7 @@ export type Client = {
   getUserProfile: () => User | undefined;
   addListener: (eventType: ClientEventId, listener: EventListener) => Function;
   onAuthChange: (authenticated: boolean) => boolean;
+  getAccessToken: () => Promise<JWTPayload>;
 };
 
 export const ClientStatus = {
@@ -146,6 +148,10 @@ export type ClientFactory = {
   setError: Client['setError'];
   isInitialized: Client['isInitialized'];
   isAuthenticated: Client['isAuthenticated'];
+  fetchApiToken: (
+    endPointUrl: string,
+    accessToken: string
+  ) => Promise<JWTPayload>;
 } & EventHandlers;
 
 export function createEventHandling(): EventHandlers {
@@ -232,6 +238,36 @@ export function createClient(): ClientFactory {
     return true;
   };
 
+  const fetchApiToken: ClientFactory['fetchApiToken'] = async (
+    endPointUri,
+    accessToken
+  ) => {
+    const myHeaders = new Headers();
+    myHeaders.append('Authorization', `Bearer ${accessToken}`);
+    myHeaders.append('Content-Type', 'application/x-www-form-urlencoded');
+
+    const urlencoded = new URLSearchParams();
+    urlencoded.append(
+      'grant_type',
+      'urn:ietf:params:oauth:grant-type:uma-ticket'
+    );
+    urlencoded.append('audience', 'exampleapp-backend');
+    urlencoded.append(
+      'permission',
+      'https://api.hel.fi/auth/exampleapp-api#readwrite'
+    );
+
+    const requestOptions = {
+      method: 'POST',
+      headers: myHeaders,
+      body: urlencoded
+    };
+
+    const response = await fetch(endPointUri, requestOptions);
+    const json = await response.json();
+    return json;
+  };
+
   return {
     addListener,
     eventTrigger,
@@ -242,7 +278,8 @@ export function createClient(): ClientFactory {
     setStatus,
     setError,
     isInitialized,
-    isAuthenticated
+    isAuthenticated,
+    fetchApiToken
   };
 }
 
@@ -269,4 +306,8 @@ export function getLocationBasedUri(
     return undefined;
   }
   return `${location}${property}`;
+}
+
+export function getTokenUri(clientProps: ClientProps): string {
+  return `${clientProps.url}/realms/${clientProps.realm}/protocol/openid-connect/token`;
 }

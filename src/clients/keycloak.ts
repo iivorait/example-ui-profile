@@ -13,7 +13,8 @@ import {
   getClientConfig,
   hasValidClientConfig,
   getLocationBasedUri,
-  ClientProps
+  ClientProps,
+  getTokenUri
 } from './index';
 
 function getLocalStorageId(config: ClientProps, useType: string): string {
@@ -130,6 +131,7 @@ export function createKeycloakClient(): Client {
     eventTrigger,
     getStoredUser,
     setStoredUser,
+    fetchApiToken,
     ...clientFunctions
   } = createClient();
 
@@ -296,6 +298,14 @@ export function createKeycloakClient(): Client {
     });
   };
 
+  const getAccessToken: Client['getAccessToken'] = async () => {
+    const tokenResponse = await fetchApiToken(
+      getTokenUri(getClientConfig()),
+      keycloak.token as string
+    );
+    return tokenResponse;
+  };
+
   client = {
     init,
     login,
@@ -307,9 +317,11 @@ export function createKeycloakClient(): Client {
     handleCallback,
     getOrLoadUser,
     onAuthChange,
+    getAccessToken,
     ...clientFunctions
   };
   bindEvents(keycloak, { onAuthChange, eventTrigger, setError, clearSession });
+  console.log('client', client);
   return client;
 }
 
