@@ -1,3 +1,8 @@
+// following ts-ignore + eslint-disable fixes "Could not find declaration file for module" error for await-handler
+// eslint-disable-next-line @typescript-eslint/ban-ts-ignore
+// @ts-ignore
+import to from 'await-handler';
+
 export type User = Record<string, string | number | boolean>;
 export type Token = string | undefined;
 export type ClientType = 'keycloak' | 'oidc';
@@ -264,8 +269,15 @@ export function createClient(): ClientFactory {
       body: urlencoded
     };
 
-    const response = await fetch(options.uri, requestOptions);
-    const json = await response.json();
+    const [fetchError, fetchResponse] = await to(
+      fetch(options.uri, requestOptions)
+    );
+    if (fetchError) {
+      return {
+        fetchError
+      };
+    }
+    const json = await fetchResponse.json();
     return json;
   };
 

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Navigation } from 'hds-react';
+import { useHistory, useLocation } from 'react-router-dom';
 
 import { useClient } from '../clients/client';
 
@@ -16,14 +17,16 @@ const Header = (): React.ReactElement => {
   const authenticated = client.isAuthenticated();
   const initialized = client.isInitialized();
   const user = client.getUser();
-
+  const history = useHistory();
+  const location = useLocation();
   const [language, setLanguage] = useState(languageOptions[0]);
-  const [active, setActive] = useState<'link' | 'button' | 'dropdown'>();
+  const [active, setActive] = useState<'frontpage' | 'accessTokens'>(
+    location.pathname !== '/accessTokens' ? 'frontpage' : 'accessTokens'
+  );
 
-  // show helsingfors logo if swedish is selected as the language
   const logoLanguage = language.code === 'sv' ? 'sv' : 'fi';
-
   const title = 'Helsinki Profiili Example';
+  const userName = user ? `${user.given_name} ${user.family_name}` : '';
 
   const formatSelectedValue = ({ code }: LanguageOption): string =>
     code.toUpperCase();
@@ -44,47 +47,34 @@ const Header = (): React.ReactElement => {
       skipToContentLabel="Skip to main content">
       <Navigation.Row display="inline">
         <Navigation.Item
-          active={active === 'link'}
-          label="Link"
+          active={active === 'frontpage'}
+          label="Etusivu"
           tabIndex={0}
-          onClick={(): void => setActive('link')}
+          onClick={(): void => {
+            setActive('frontpage');
+            history.push('/');
+          }}
         />
         <Navigation.Item
-          active={active === 'button'}
+          active={active === 'accessTokens'}
           as="button"
-          label="Button"
+          label="Hae access token"
           type="button"
-          onClick={(): void => setActive('button')}
+          onClick={(): void => {
+            setActive('accessTokens');
+            history.push('/accessTokens');
+          }}
         />
-        <Navigation.Dropdown active={active === 'dropdown'} label="Dropdown">
-          <Navigation.Item
-            label="Link to hel.fi"
-            href="https://hel.fi"
-            target="_blank"
-          />
-          <Navigation.Item
-            as="button"
-            type="button"
-            onClick={(): void => setActive('dropdown')}
-            label="Make dropdown active"
-          />
-        </Navigation.Dropdown>
       </Navigation.Row>
-
       <Navigation.Actions>
-        <Navigation.Search
-          searchLabel="Search"
-          searchPlaceholder="Search page"
-        />
-
         {initialized && (
           <Navigation.User
             authenticated={authenticated}
             label="Sign in"
             onSignIn={(): void => client.login()}
-            userName={user ? `${user.given_name} ${user.family_name}` : ''}>
+            userName={userName}>
             <Navigation.Item
-              label="Your profile"
+              label={userName}
               href="https://hel.fi"
               target="_blank"
               variant="primary"

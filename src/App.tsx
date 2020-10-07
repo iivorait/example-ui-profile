@@ -23,7 +23,7 @@ function App(): React.ReactElement {
             <Route path={['/']} exact>
               <Index />
             </Route>
-            <Route path={['/accessToken']} exact>
+            <Route path={['/accessTokens']} exact>
               <AccessTokens />
             </Route>
             <Route path={['/callback']} exact>

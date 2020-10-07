@@ -32,7 +32,10 @@ const AccessTokens = (): React.ReactElement => {
   const onOptionChange = (newOptions: FetchApiTokenOptions): void => {
     setOptions(newOptions);
   };
-  if (!client || !client.isAuthenticated()) {
+  if (!client || !client.isInitialized()) {
+    return <div>Haetaan kirjautumistietoja...</div>;
+  }
+  if (!client.isAuthenticated()) {
     return <div>Kirjaudu sisään.</div>;
   }
   return (
