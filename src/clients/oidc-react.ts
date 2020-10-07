@@ -18,7 +18,8 @@ import {
   hasValidClientConfig,
   getClientConfig,
   getLocationBasedUri,
-  getTokenUri
+  getTokenUri,
+  FetchApiTokenOptions
 } from './index';
 
 let client: Client | null = null;
@@ -248,15 +249,18 @@ export function createOidcClient(): Client {
     return getStoredUser();
   };
 
-  const getAccessToken: Client['getAccessToken'] = async () => {
+  const getAccessToken: Client['getAccessToken'] = async (
+    options: FetchApiTokenOptions
+  ) => {
     const user = getStoredUser();
     if (!user) {
       throw new Error('getAccessToken: no user with access token');
     }
-    const tokenResponse = await fetchApiToken(
-      getTokenUri(getClientConfig()),
-      user.access_token as string
-    );
+    const tokenResponse = await fetchApiToken({
+      uri: getTokenUri(getClientConfig()),
+      accessToken: user.access_token as string,
+      ...options
+    });
     return tokenResponse;
   };
 

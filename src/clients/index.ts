@@ -27,7 +27,7 @@ export type Client = {
   getUserProfile: () => User | undefined;
   addListener: (eventType: ClientEventId, listener: EventListener) => Function;
   onAuthChange: (authenticated: boolean) => boolean;
-  getAccessToken: () => Promise<JWTPayload>;
+  getAccessToken: (options: FetchApiTokenOptions) => Promise<JWTPayload>;
 };
 
 export const ClientStatus = {
@@ -38,6 +38,17 @@ export const ClientStatus = {
 } as const;
 
 export type ClientStatusId = typeof ClientStatus[keyof typeof ClientStatus];
+
+export type FetchApiTokenOptions = {
+  grantType: string;
+  audience: string;
+  permission: string;
+};
+
+export type FetchApiTokenConfiguration = FetchApiTokenOptions & {
+  uri: string;
+  accessToken: string;
+};
 
 export const ClientEvent = {
   TOKEN_EXPIRED: 'TOKEN_EXPIRED',
@@ -148,10 +159,7 @@ export type ClientFactory = {
   setError: Client['setError'];
   isInitialized: Client['isInitialized'];
   isAuthenticated: Client['isAuthenticated'];
-  fetchApiToken: (
-    endPointUrl: string,
-    accessToken: string
-  ) => Promise<JWTPayload>;
+  fetchApiToken: (options: FetchApiTokenConfiguration) => Promise<JWTPayload>;
 } & EventHandlers;
 
 export function createEventHandling(): EventHandlers {
@@ -239,23 +247,16 @@ export function createClient(): ClientFactory {
   };
 
   const fetchApiToken: ClientFactory['fetchApiToken'] = async (
-    endPointUri,
-    accessToken
+    options: FetchApiTokenConfiguration
   ) => {
     const myHeaders = new Headers();
-    myHeaders.append('Authorization', `Bearer ${accessToken}`);
+    myHeaders.append('Authorization', `Bearer ${options.accessToken}`);
     myHeaders.append('Content-Type', 'application/x-www-form-urlencoded');
 
     const urlencoded = new URLSearchParams();
-    urlencoded.append(
-      'grant_type',
-      'urn:ietf:params:oauth:grant-type:uma-ticket'
-    );
-    urlencoded.append('audience', 'exampleapp-backend');
-    urlencoded.append(
-      'permission',
-      'https://api.hel.fi/auth/exampleapp-api#readwrite'
-    );
+    urlencoded.append('grant_type', options.grantType);
+    urlencoded.append('audience', options.audience);
+    urlencoded.append('permission', options.permission);
 
     const requestOptions = {
       method: 'POST',
@@ -263,7 +264,7 @@ export function createClient(): ClientFactory {
       body: urlencoded
     };
 
-    const response = await fetch(endPointUri, requestOptions);
+    const response = await fetch(options.uri, requestOptions);
     const json = await response.json();
     return json;
   };

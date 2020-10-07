@@ -2,6 +2,7 @@ import React from 'react';
 import { Switch, Route } from 'react-router';
 
 import Index from './pages/Index';
+import AccessTokens from './pages/AccessTokens';
 import { ClientProvider } from './clients/ClientProvider';
 import OidcCallback from './clients/OidcCallback';
 import StoreProvider from './clients/redux/StoreProvider';
@@ -21,6 +22,9 @@ function App(): React.ReactElement {
           <Switch>
             <Route path={['/']} exact>
               <Index />
+            </Route>
+            <Route path={['/accessToken']} exact>
+              <AccessTokens />
             </Route>
             <Route path={['/callback']} exact>
               <div>CallBack</div>

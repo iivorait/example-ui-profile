@@ -68,3 +68,33 @@
   color:#aaa;
 }
 
+.access-token-form{
+  display: flex;
+  flex-direction: column;
+  padding-bottom: 30px;
+}
+
+.access-token-form > div{
+  padding:10px 0;
+}
+
+.access-token-form label{
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
+.access-token-form input{
+  padding:10px;
+  margin-top: 10px;
+}
+
+.access-token-output{
+  display: flex;
+  flex-direction: column;
+  padding-top: 30px;
+}
+
+.access-token-output pre{
+  font-size:11px;
+}

@@ -14,7 +14,8 @@ import {
   hasValidClientConfig,
   getLocationBasedUri,
   ClientProps,
-  getTokenUri
+  getTokenUri,
+  FetchApiTokenOptions
 } from './index';
 
 function getLocalStorageId(config: ClientProps, useType: string): string {
@@ -298,11 +299,14 @@ export function createKeycloakClient(): Client {
     });
   };
 
-  const getAccessToken: Client['getAccessToken'] = async () => {
-    const tokenResponse = await fetchApiToken(
-      getTokenUri(getClientConfig()),
-      keycloak.token as string
-    );
+  const getAccessToken: Client['getAccessToken'] = async (
+    options: FetchApiTokenOptions
+  ) => {
+    const tokenResponse = await fetchApiToken({
+      uri: getTokenUri(getClientConfig()),
+      accessToken: keycloak.token as string,
+      ...options
+    });
     return tokenResponse;
   };
 
