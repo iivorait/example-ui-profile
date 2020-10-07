@@ -1,5 +1,10 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable @typescript-eslint/camelcase */
+
+// following ts-ignore + eslint-disable fixes "Could not find declaration file for module" error for await-handler
+// eslint-disable-next-line @typescript-eslint/ban-ts-ignore
+// @ts-ignore
+import to from 'await-handler';
 import {
   configureClient,
   EventListeners,
@@ -16,19 +21,6 @@ import { createKeycloakClient } from '../keycloak';
 import { mockMutatorGetter } from '../__mocks__/keycloak-mock';
 import { createOidcClient } from '../oidc-react';
 import { mockMutatorGetterOidc } from '../__mocks__/oidc-react-mock';
-// import { createOidcClient } from '../oidc-react';
-
-// Allows for awaiting promises without try-catch-blocks
-// Inspired by https://blog.grossman.io/how-to-write-async-await-without-try-catch-blocks-in-javascript/
-// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
-async function to(promise: Promise<unknown>) {
-  try {
-    const data = await promise;
-    return [null, data];
-  } catch (err) {
-    return [err];
-  }
-}
 
 describe('Client ', () => {
   const clientTypes: ClientType[] = ['keycloak', 'oidc'];
@@ -108,7 +100,6 @@ describe('Client ', () => {
           eventListeners = createEventListeners(client.addListener);
         });
         afterEach(() => {
-          // saveUserToLocalStorage(mockMutator.getTokenParsed());
           eventListeners.dispose();
         });
         it('changes status and triggers events when changed statusChange', async () => {
@@ -152,9 +143,6 @@ describe('Client ', () => {
           mockMutator.resetMock();
           client = createNewClient();
         });
-        afterEach(() => {
-          // saveUserToLocalStorage(mockMutator.getTokenParsed());
-        });
         it('returns user data if authenticated and data is found. Otherwise returns undefined', async () => {
           const email = 'foo@bar.com';
           mockMutator.setUser(mockMutator.createValidUserData({ email }));
@@ -184,20 +172,13 @@ describe('Client ', () => {
           await to(client.init());
           client.login();
           expect(mockMutator.getLoginCallCount()).toBe(1);
-          // expect(getSessionStorageTokens()).toEqual(tokens);
         });
         it('logout call is passed to the client library and event is triggered and tokens are cleared', async () => {
           mockMutator.setTokens(tokens);
           await to(client.init());
-          // expect(getSessionStorageTokens()).toEqual(tokens);
           client.logout();
           expect(mockMutator.getLogoutCallCount()).toBe(1);
           expect(eventListeners.getCallCount(ClientEvent.LOGGING_OUT)).toBe(1);
-          /* expect(getSessionStorageTokens()).toEqual({
-            token: undefined,
-            idToken: undefined,
-            refreshToken: undefined
-          }); */
           mockMutator.setUser({});
           expect(client.getUser()).toBe(undefined);
         });

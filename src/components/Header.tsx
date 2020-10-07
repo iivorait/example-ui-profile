@@ -25,11 +25,9 @@ const Header = (): React.ReactElement => {
 
   const title = 'Helsinki Profiili Example';
 
-  // formats the selected value
   const formatSelectedValue = ({ code }: LanguageOption): string =>
     code.toUpperCase();
 
-  // formats each option label
   const formatOptionLabel = ({ code, label }: LanguageOption): string =>
     `${label} (${code.toUpperCase()})`;
 
@@ -44,7 +42,6 @@ const Header = (): React.ReactElement => {
       titleUrl="https://hel.fi"
       skipTo="#content"
       skipToContentLabel="Skip to main content">
-      {/* NAVIGATION ROW */}
       <Navigation.Row display="inline">
         <Navigation.Item
           active={active === 'link'}
@@ -74,15 +71,12 @@ const Header = (): React.ReactElement => {
         </Navigation.Dropdown>
       </Navigation.Row>
 
-      {/* NAVIGATION ACTIONS */}
       <Navigation.Actions>
-        {/* SEARCH */}
         <Navigation.Search
           searchLabel="Search"
           searchPlaceholder="Search page"
         />
 
-        {/* USER */}
         {initialized && (
           <Navigation.User
             authenticated={authenticated}
@@ -105,7 +99,6 @@ const Header = (): React.ReactElement => {
           </Navigation.User>
         )}
 
-        {/* LANGUAGE SELECTOR */}
         <Navigation.LanguageSelector
           ariaLabel="Selected language"
           options={languageOptions}

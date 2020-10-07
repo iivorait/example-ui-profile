@@ -1,5 +1,9 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable @typescript-eslint/camelcase */
+// following ts-ignore + eslint-disable fixes "Could not find declaration file for module" error for await-handler
+// eslint-disable-next-line @typescript-eslint/ban-ts-ignore
+// @ts-ignore
+import to from 'await-handler';
 import { UserManager } from 'oidc-client';
 import {
   EventListeners,
@@ -9,18 +13,6 @@ import {
 import { ClientStatus, Client, ClientEvent, ClientError } from '../index';
 import { createOidcClient } from '../oidc-react';
 import { mockMutatorGetterOidc } from '../__mocks__/oidc-react-mock';
-
-// Allows for awaiting promises without try-catch-blocks
-// Inspired by https://blog.grossman.io/how-to-write-async-await-without-try-catch-blocks-in-javascript/
-// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
-async function to(promise: Promise<unknown>) {
-  try {
-    const data = await promise;
-    return [null, data];
-  } catch (err) {
-    return [err];
-  }
-}
 
 type UserManagerEvent = {
   raise: (payload?: any) => void;

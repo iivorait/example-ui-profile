@@ -49,7 +49,6 @@ jest.mock('oidc-client', () => {
     constructor(settings: UserManagerSettings) {
       const mockMutator = mockMutatorGetterOidc();
       const userManager = mockOidcUserManager(settings) as UserManager;
-      // console.log('userManager', userManager);
       mockMutator.setInstance(userManager);
       return userManager;
     }

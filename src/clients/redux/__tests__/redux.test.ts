@@ -89,7 +89,7 @@ describe('Redux store ', () => {
         status: ClientStatus.AUTHORIZED,
         initialized: true,
         authenticated: true,
-        user // because client does not have an user
+        user
       };
       expect(store.getState()).toEqual(expectedAuthenticatedState);
       client.onAuthChange(false);
