@@ -32,7 +32,9 @@ export type Client = {
   getUserProfile: () => User | undefined;
   addListener: (eventType: ClientEventId, listener: EventListener) => Function;
   onAuthChange: (authenticated: boolean) => boolean;
-  getAccessToken: (options: FetchApiTokenOptions) => Promise<JWTPayload>;
+  getAccessToken: (
+    options: FetchApiTokenOptions
+  ) => Promise<JWTPayload | FetchError>;
 };
 
 export const ClientStatus = {
@@ -53,6 +55,12 @@ export type FetchApiTokenOptions = {
 export type FetchApiTokenConfiguration = FetchApiTokenOptions & {
   uri: string;
   accessToken: string;
+};
+
+export type FetchError = {
+  status?: number;
+  error?: Error;
+  message?: string;
 };
 
 export const ClientEvent = {
@@ -164,7 +172,9 @@ export type ClientFactory = {
   setError: Client['setError'];
   isInitialized: Client['isInitialized'];
   isAuthenticated: Client['isAuthenticated'];
-  fetchApiToken: (options: FetchApiTokenConfiguration) => Promise<JWTPayload>;
+  fetchApiToken: (
+    options: FetchApiTokenConfiguration
+  ) => Promise<JWTPayload | FetchError>;
 } & EventHandlers;
 
 export function createEventHandling(): EventHandlers {
@@ -274,11 +284,25 @@ export function createClient(): ClientFactory {
     );
     if (fetchError) {
       return {
-        fetchError
-      };
+        error: fetchError,
+        message: 'Network or CORS error occured'
+      } as FetchError;
     }
-    const json = await fetchResponse.json();
-    return json;
+    if (!fetchResponse.ok) {
+      return {
+        status: fetchResponse.status,
+        message: fetchResponse.statusText,
+        error: new Error(fetchResponse.body)
+      } as FetchError;
+    }
+    const [parseError, json] = await to(fetchResponse.json());
+    if (parseError) {
+      return {
+        error: parseError,
+        message: 'Returned data is not valid json'
+      } as FetchError;
+    }
+    return json as JWTPayload;
   };
 
   return {

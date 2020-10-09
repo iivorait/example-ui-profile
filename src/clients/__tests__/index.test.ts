@@ -1,3 +1,6 @@
+/* eslint-disable @typescript-eslint/camelcase */
+import { FetchMock } from 'jest-fetch-mock';
+
 import {
   ClientError,
   ClientEvent,
@@ -5,11 +8,18 @@ import {
   ClientFactory,
   ClientStatus,
   createClient,
-  EventPayload
+  EventPayload,
+  FetchApiTokenConfiguration,
+  getTokenUri,
+  getClientConfig,
+  FetchError
 } from '../index';
+import { configureClient } from '../__mocks__';
 
 describe('Client factory ', () => {
   let client: ClientFactory;
+  const fetchMock: FetchMock = global.fetch;
+  configureClient();
   beforeEach(() => {
     client = createClient();
   });
@@ -152,6 +162,92 @@ describe('Client factory ', () => {
       expect(client.setError(secondError)).toBe(true);
       expect(getCallCount()).toBe(2);
       expect(getLastCallPayload()).toEqual(secondError);
+    });
+  });
+  describe('fetchApiToken makes requests ', () => {
+    beforeAll(() => fetchMock.enableMocks());
+    afterAll(() => fetchMock.disableMocks());
+    afterEach(() => fetchMock.resetMocks());
+    const fetchConfig: FetchApiTokenConfiguration = {
+      uri: getTokenUri({
+        ...getClientConfig(),
+        realm: 'realm-value'
+      }),
+      accessToken: 'accessToken-value',
+      audience: 'audience-value',
+      permission: 'permission-value',
+      grantType: 'grantType-value'
+    };
+    let lastRequest: Request;
+    it('where access token is added to headers and given options are in body', async () => {
+      const responseData = {
+        status: 200,
+        body: JSON.stringify({ access_token: 'returned-accessToken' })
+      };
+      fetchMock.mockIf(fetchConfig.uri, req => {
+        lastRequest = req;
+        return Promise.resolve(responseData);
+      });
+
+      await client.fetchApiToken(fetchConfig);
+      const requestData = new URLSearchParams(await lastRequest.text());
+      expect(
+        lastRequest.headers
+          .get('Authorization')
+          ?.includes(fetchConfig.accessToken)
+      ).toBe(true);
+      expect(requestData.get('audience')).toBe(fetchConfig.audience);
+      expect(requestData.get('permission')).toBe(fetchConfig.permission);
+      expect(requestData.get('grant_type')).toBe(fetchConfig.grantType);
+    });
+    it('and server side error is handled', async () => {
+      const responseData = {
+        status: 400,
+        body: 'an error'
+      };
+      fetchMock.mockIf(fetchConfig.uri, req => {
+        lastRequest = req;
+        return Promise.resolve(responseData);
+      });
+
+      const response = (await client.fetchApiToken(fetchConfig)) as FetchError;
+
+      expect(response.status).toBe(responseData.status);
+      expect(response.error).toBeDefined();
+      if (response.error) {
+        expect(response.error.message).toBe(responseData.body);
+      }
+    });
+    it('and network / cors error is handled', async () => {
+      const responseData = new Error('network error');
+      fetchMock.mockIf(fetchConfig.uri, req => {
+        lastRequest = req;
+        return Promise.reject(responseData);
+      });
+
+      const response = (await client.fetchApiToken(fetchConfig)) as FetchError;
+
+      expect(response.error).toBeDefined();
+      if (response.error) {
+        expect(response.error.message).toBe(responseData.message);
+      }
+    });
+    it('and json parse error is handled', async () => {
+      const responseData = {
+        status: 200,
+        body: '{a:invalidjson}'
+      };
+      fetchMock.mockIf(fetchConfig.uri, req => {
+        lastRequest = req;
+        return Promise.resolve(responseData);
+      });
+
+      const response = (await client.fetchApiToken(fetchConfig)) as FetchError;
+      expect(response.error).toBeDefined();
+      expect(response.message).toBeDefined();
+      if (response.error) {
+        expect(response.error.message).toBeDefined();
+      }
     });
   });
 });
