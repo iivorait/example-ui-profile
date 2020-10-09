@@ -9,11 +9,11 @@ import KeycloakConsumer from '../components/ClientConsumer';
 import { getClientConfig } from '../clients';
 
 const IndexPage = (): React.ReactElement => {
-  const client = useContext(ClientContext);
+  const clientContext = useContext(ClientContext);
   const clientConfig = getClientConfig();
   return (
     <PageContent>
-      {!!client && client.client ? (
+      {!!clientContext && clientContext.client ? (
         <>
           <h1>Client-demo</h1>
           <p>
@@ -26,10 +26,10 @@ const IndexPage = (): React.ReactElement => {
           </p>
           <p>Voit myös kirjatua ulos toisessa ikkunassa.</p>
           <p>
-            Clientiksi on .env-filessä määritelty:{' '}
+            Clientiksi on .env-filessä määritelty:
             <strong>{clientConfig.type}</strong>
           </p>
-          <LoginComponent client={client.client} />
+          <LoginComponent client={clientContext.client} />
           <ReduxConsumer />
           <WithAuthDemo />
           <KeycloakConsumer />
