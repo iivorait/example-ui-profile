@@ -209,10 +209,7 @@ describe('Client factory ', () => {
         status: 200,
         body: JSON.stringify(responseBody)
       };
-      fetchMock.mockIf(fetchConfig.uri, req => {
-        lastRequest = req;
-        return Promise.resolve(responseData);
-      });
+      fetchMock.mockIf(fetchConfig.uri, () => Promise.resolve(responseData));
 
       const returnedData = await client.fetchApiToken(fetchConfig);
 
@@ -223,13 +220,8 @@ describe('Client factory ', () => {
         status: 400,
         body: 'an error'
       };
-      fetchMock.mockIf(fetchConfig.uri, req => {
-        lastRequest = req;
-        return Promise.resolve(responseData);
-      });
-
+      fetchMock.mockIf(fetchConfig.uri, () => Promise.resolve(responseData));
       const response = (await client.fetchApiToken(fetchConfig)) as FetchError;
-
       expect(response.status).toBe(responseData.status);
       expect(response.error).toBeDefined();
       if (response.error) {
@@ -238,13 +230,8 @@ describe('Client factory ', () => {
     });
     it('and network / cors error is handled', async () => {
       const responseData = new Error('network error');
-      fetchMock.mockIf(fetchConfig.uri, req => {
-        lastRequest = req;
-        return Promise.reject(responseData);
-      });
-
+      fetchMock.mockIf(fetchConfig.uri, () => Promise.reject(responseData));
       const response = (await client.fetchApiToken(fetchConfig)) as FetchError;
-
       expect(response.error).toBeDefined();
       if (response.error) {
         expect(response.error.message).toBe(responseData.message);
@@ -255,11 +242,7 @@ describe('Client factory ', () => {
         status: 200,
         body: '{a:invalidjson}'
       };
-      fetchMock.mockIf(fetchConfig.uri, req => {
-        lastRequest = req;
-        return Promise.resolve(responseData);
-      });
-
+      fetchMock.mockIf(fetchConfig.uri, () => Promise.resolve(responseData));
       const response = (await client.fetchApiToken(fetchConfig)) as FetchError;
       expect(response.error).toBeDefined();
       expect(response.message).toBeDefined();
