@@ -200,6 +200,24 @@ describe('Client factory ', () => {
       expect(requestData.get('permission')).toBe(fetchConfig.permission);
       expect(requestData.get('grant_type')).toBe(fetchConfig.grantType);
     });
+    it('and data from server is returned to caller', async () => {
+      const responseBody = {
+        access_token: 'returned-accessToken',
+        data: true
+      };
+      const responseData = {
+        status: 200,
+        body: JSON.stringify(responseBody)
+      };
+      fetchMock.mockIf(fetchConfig.uri, req => {
+        lastRequest = req;
+        return Promise.resolve(responseData);
+      });
+
+      const returnedData = await client.fetchApiToken(fetchConfig);
+
+      expect(returnedData).toEqual(responseBody);
+    });
     it('and server side error is handled', async () => {
       const responseData = {
         status: 400,
