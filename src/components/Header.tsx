@@ -4,40 +4,24 @@ import { useHistory, useLocation } from 'react-router-dom';
 
 import { useClient } from '../clients/client';
 
-type LanguageOption = { code: string; label: string };
-
 const Header = (): React.ReactElement => {
-  const languageOptions = [
-    { code: 'fi', label: 'Suomi' },
-    { code: 'sv', label: 'Svenska' },
-    { code: 'en', label: 'English' }
-  ];
-
   const client = useClient();
   const authenticated = client.isAuthenticated();
   const initialized = client.isInitialized();
   const user = client.getUser();
   const history = useHistory();
   const location = useLocation();
-  const [language, setLanguage] = useState(languageOptions[0]);
   const [active, setActive] = useState<'frontpage' | 'accessTokens'>(
     location.pathname !== '/accessTokens' ? 'frontpage' : 'accessTokens'
   );
 
-  const logoLanguage = language.code === 'sv' ? 'sv' : 'fi';
   const title = 'Helsinki Profiili Example';
   const userName = user ? `${user.given_name} ${user.family_name}` : '';
-
-  const formatSelectedValue = ({ code }: LanguageOption): string =>
-    code.toUpperCase();
-
-  const formatOptionLabel = ({ code, label }: LanguageOption): string =>
-    `${label} (${code.toUpperCase()})`;
 
   return (
     <Navigation
       fixed={false}
-      logoLanguage={logoLanguage}
+      logoLanguage="fi"
       menuCloseAriaLabel="Close menu"
       menuOpenAriaLabel="Open menu"
       theme="white"
@@ -88,15 +72,6 @@ const Header = (): React.ReactElement => {
             />
           </Navigation.User>
         )}
-
-        <Navigation.LanguageSelector
-          ariaLabel="Selected language"
-          options={languageOptions}
-          formatSelectedValue={formatSelectedValue}
-          formatOptionLabel={formatOptionLabel}
-          onLanguageChange={setLanguage}
-          value={language}
-        />
       </Navigation.Actions>
     </Navigation>
   );

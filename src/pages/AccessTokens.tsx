@@ -33,10 +33,20 @@ const AccessTokens = (): React.ReactElement => {
     setOptions(newOptions);
   };
   if (!client || !client.isInitialized()) {
-    return <div>Haetaan kirjautumistietoja...</div>;
+    return (
+      <PageContent>
+        <div>Haetaan kirjautumistietoja...</div>
+      </PageContent>
+    );
   }
   if (!client.isAuthenticated()) {
-    return <div>Kirjaudu sisään.</div>;
+    return (
+      <PageContent>
+        <Button translate="" onClick={client.login}>
+          Kirjaudu sisään
+        </Button>
+      </PageContent>
+    );
   }
   return (
     <PageContent>
