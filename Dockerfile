@@ -17,23 +17,16 @@ ENV PATH=$PATH:/app/.npm-global/bin
 ENV YARN_VERSION 1.19.1
 RUN yarn policies set-version $YARN_VERSION
 
-# Use non-root user
-USER appuser
-
 # Copy package.json and package-lock.json/yarn.lock files
 COPY package*.json *yarn* ./
 
 # Install npm depepndencies
 ENV PATH /app/node_modules/.bin:$PATH
 
-USER root
-
 RUN apt-install.sh build-essential
 
-USER appuser
 RUN yarn && yarn cache clean --force
 
-USER root
 RUN apt-cleanup.sh build-essential
 
 # =============================
