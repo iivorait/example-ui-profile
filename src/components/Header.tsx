@@ -1,40 +1,27 @@
 import React, { useState } from 'react';
 import { Navigation } from 'hds-react';
+import { useHistory, useLocation } from 'react-router-dom';
 
 import { useClient } from '../clients/client';
 
-type LanguageOption = { code: string; label: string };
-
 const Header = (): React.ReactElement => {
-  const languageOptions = [
-    { code: 'fi', label: 'Suomi' },
-    { code: 'sv', label: 'Svenska' },
-    { code: 'en', label: 'English' }
-  ];
-
   const client = useClient();
   const authenticated = client.isAuthenticated();
   const initialized = client.isInitialized();
   const user = client.getUser();
-
-  const [language, setLanguage] = useState(languageOptions[0]);
-  const [active, setActive] = useState<'link' | 'button' | 'dropdown'>();
-
-  // show helsingfors logo if swedish is selected as the language
-  const logoLanguage = language.code === 'sv' ? 'sv' : 'fi';
+  const history = useHistory();
+  const location = useLocation();
+  const [active, setActive] = useState<'frontpage' | 'accessTokens'>(
+    location.pathname !== '/accessTokens' ? 'frontpage' : 'accessTokens'
+  );
 
   const title = 'Helsinki Profiili Example';
-
-  const formatSelectedValue = ({ code }: LanguageOption): string =>
-    code.toUpperCase();
-
-  const formatOptionLabel = ({ code, label }: LanguageOption): string =>
-    `${label} (${code.toUpperCase()})`;
+  const userName = user ? `${user.given_name} ${user.family_name}` : '';
 
   return (
     <Navigation
       fixed={false}
-      logoLanguage={logoLanguage}
+      logoLanguage="fi"
       menuCloseAriaLabel="Close menu"
       menuOpenAriaLabel="Open menu"
       theme="white"
@@ -44,47 +31,34 @@ const Header = (): React.ReactElement => {
       skipToContentLabel="Skip to main content">
       <Navigation.Row display="inline">
         <Navigation.Item
-          active={active === 'link'}
-          label="Link"
+          active={active === 'frontpage'}
+          label="Etusivu"
           tabIndex={0}
-          onClick={(): void => setActive('link')}
+          onClick={(): void => {
+            setActive('frontpage');
+            history.push('/');
+          }}
         />
         <Navigation.Item
-          active={active === 'button'}
+          active={active === 'accessTokens'}
           as="button"
-          label="Button"
+          label="Hae access token"
           type="button"
-          onClick={(): void => setActive('button')}
+          onClick={(): void => {
+            setActive('accessTokens');
+            history.push('/accessTokens');
+          }}
         />
-        <Navigation.Dropdown active={active === 'dropdown'} label="Dropdown">
-          <Navigation.Item
-            label="Link to hel.fi"
-            href="https://hel.fi"
-            target="_blank"
-          />
-          <Navigation.Item
-            as="button"
-            type="button"
-            onClick={(): void => setActive('dropdown')}
-            label="Make dropdown active"
-          />
-        </Navigation.Dropdown>
       </Navigation.Row>
-
       <Navigation.Actions>
-        <Navigation.Search
-          searchLabel="Search"
-          searchPlaceholder="Search page"
-        />
-
         {initialized && (
           <Navigation.User
             authenticated={authenticated}
             label="Sign in"
             onSignIn={(): void => client.login()}
-            userName={user ? `${user.given_name} ${user.family_name}` : ''}>
+            userName={userName}>
             <Navigation.Item
-              label="Your profile"
+              label={userName}
               href="https://hel.fi"
               target="_blank"
               variant="primary"
@@ -98,15 +72,6 @@ const Header = (): React.ReactElement => {
             />
           </Navigation.User>
         )}
-
-        <Navigation.LanguageSelector
-          ariaLabel="Selected language"
-          options={languageOptions}
-          formatSelectedValue={formatSelectedValue}
-          formatOptionLabel={formatOptionLabel}
-          onLanguageChange={setLanguage}
-          value={language}
-        />
       </Navigation.Actions>
     </Navigation>
   );

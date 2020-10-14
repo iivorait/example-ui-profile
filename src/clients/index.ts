@@ -1,6 +1,12 @@
+// following ts-ignore + eslint-disable fixes "Could not find declaration file for module" error for await-handler
+// eslint-disable-next-line @typescript-eslint/ban-ts-ignore
+// @ts-ignore
+import to from 'await-handler';
+
 export type User = Record<string, string | number | boolean>;
 export type Token = string | undefined;
 export type ClientType = 'keycloak' | 'oidc';
+export type JWTPayload = string | Buffer | Record<string, {}>;
 export type EventPayload =
   | User
   | undefined
@@ -26,6 +32,9 @@ export type Client = {
   getUserProfile: () => User | undefined;
   addListener: (eventType: ClientEventId, listener: EventListener) => Function;
   onAuthChange: (authenticated: boolean) => boolean;
+  getAccessToken: (
+    options: FetchApiTokenOptions
+  ) => Promise<JWTPayload | FetchError>;
 };
 
 export const ClientStatus = {
@@ -36,6 +45,23 @@ export const ClientStatus = {
 } as const;
 
 export type ClientStatusId = typeof ClientStatus[keyof typeof ClientStatus];
+
+export type FetchApiTokenOptions = {
+  grantType: string;
+  audience: string;
+  permission: string;
+};
+
+export type FetchApiTokenConfiguration = FetchApiTokenOptions & {
+  uri: string;
+  accessToken: string;
+};
+
+export type FetchError = {
+  status?: number;
+  error?: Error;
+  message?: string;
+};
 
 export const ClientEvent = {
   TOKEN_EXPIRED: 'TOKEN_EXPIRED',
@@ -146,6 +172,9 @@ export type ClientFactory = {
   setError: Client['setError'];
   isInitialized: Client['isInitialized'];
   isAuthenticated: Client['isAuthenticated'];
+  fetchApiToken: (
+    options: FetchApiTokenConfiguration
+  ) => Promise<JWTPayload | FetchError>;
 } & EventHandlers;
 
 export function createEventHandling(): EventHandlers {
@@ -232,6 +261,50 @@ export function createClient(): ClientFactory {
     return true;
   };
 
+  const fetchApiToken: ClientFactory['fetchApiToken'] = async (
+    options: FetchApiTokenConfiguration
+  ) => {
+    const myHeaders = new Headers();
+    myHeaders.append('Authorization', `Bearer ${options.accessToken}`);
+    myHeaders.append('Content-Type', 'application/x-www-form-urlencoded');
+
+    const urlencoded = new URLSearchParams();
+    urlencoded.append('grant_type', options.grantType);
+    urlencoded.append('audience', options.audience);
+    urlencoded.append('permission', options.permission);
+
+    const requestOptions = {
+      method: 'POST',
+      headers: myHeaders,
+      body: urlencoded
+    };
+
+    const [fetchError, fetchResponse] = await to(
+      fetch(options.uri, requestOptions)
+    );
+    if (fetchError) {
+      return {
+        error: fetchError,
+        message: 'Network or CORS error occured'
+      } as FetchError;
+    }
+    if (!fetchResponse.ok) {
+      return {
+        status: fetchResponse.status,
+        message: fetchResponse.statusText,
+        error: new Error(fetchResponse.body)
+      } as FetchError;
+    }
+    const [parseError, json] = await to(fetchResponse.json());
+    if (parseError) {
+      return {
+        error: parseError,
+        message: 'Returned data is not valid json'
+      } as FetchError;
+    }
+    return json as JWTPayload;
+  };
+
   return {
     addListener,
     eventTrigger,
@@ -242,7 +315,8 @@ export function createClient(): ClientFactory {
     setStatus,
     setError,
     isInitialized,
-    isAuthenticated
+    isAuthenticated,
+    fetchApiToken
   };
 }
 
@@ -269,4 +343,8 @@ export function getLocationBasedUri(
     return undefined;
   }
   return `${location}${property}`;
+}
+
+export function getTokenUri(clientProps: ClientProps): string {
+  return `${clientProps.url}/realms/${clientProps.realm}/protocol/openid-connect/token`;
 }
