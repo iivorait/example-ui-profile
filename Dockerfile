@@ -71,4 +71,6 @@ COPY --from=staticbuilder --chown=nginx:nginx /app/build /usr/share/nginx/html
 
 COPY .prod/nginx.conf /etc/nginx/conf.d/default.conf
 
+RUN chown nginx:nginx /var/cache/nginx
+
 EXPOSE 80
