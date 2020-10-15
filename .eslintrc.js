@@ -6,6 +6,13 @@ module.exports = {
     browser: true,
     jest: true
   },
+  parser: '@typescript-eslint/parser',
+  parserOptions: {
+    project: './tsconfig.eslint.json',
+    tsconfigRootDir: __dirname,
+    sourceType: 'module',
+  },
+  plugins: ['jsx-a11y'],
   rules: {
     'react/prop-types': 0,
     'react/destructuring-assignment': 0,

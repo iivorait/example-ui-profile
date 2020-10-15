@@ -50,6 +50,16 @@ Config can also be overridden for command line:
 ```bash
 REACT_APP_OIDC_URL=https://foo.bar yarn start
 ```
+
+## Testing 
+
+### `yarn test`
+
+Runs unit tests
+
+### `yarn test-cypress`
+Runs cypress (e2e) tests locally.
+
 ## Docker
 
 Run `docker-compose up`
