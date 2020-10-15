@@ -9,6 +9,9 @@ ENV NPM_CONFIG_LOGLEVEL warn
 ARG NODE_ENV=production
 ENV NODE_ENV $NODE_ENV
 
+ARG ROOT_USER
+RUN echo "-------> ROOT_USER: ${ROOT_USER}"
+
 # Global npm deps in a non-root user directory
 ENV NPM_CONFIG_PREFIX=/app/.npm-global
 ENV PATH=$PATH:/app/.npm-global/bin
@@ -17,16 +20,23 @@ ENV PATH=$PATH:/app/.npm-global/bin
 ENV YARN_VERSION 1.19.1
 RUN yarn policies set-version $YARN_VERSION
 
+# Use non-root user
+USER appuser
+
 # Copy package.json and package-lock.json/yarn.lock files
 COPY package*.json *yarn* ./
 
 # Install npm depepndencies
 ENV PATH /app/node_modules/.bin:$PATH
 
+USER $ROOT_USER
+
 RUN apt-install.sh build-essential
 
+USER appuser
 RUN yarn && yarn cache clean --force
 
+USER $ROOT_USER
 RUN apt-cleanup.sh build-essential
 
 # =============================
@@ -60,8 +70,10 @@ FROM nginx:1.17 as production
 # =============================
 
 # Nginx runs with user "nginx" by default
-COPY --from=staticbuilder --chown=nginx:nginx /app/build /usr/share/nginx/html
-
+RUN chown nginx:nginx /var/cache/nginx \
+  && chmod -R 777 /var/log/nginx /var/cache/nginx/ \
+  && chmod 644 /etc/nginx/*
+COPY --from=staticbuilder --chown=nginx:nginx /app/build /usr/share/nginx/html 
 COPY .prod/nginx.conf /etc/nginx/conf.d/default.conf
 
 EXPOSE 80
