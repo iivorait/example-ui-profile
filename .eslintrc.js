@@ -1,11 +1,15 @@
 module.exports = {
   extends: [
-    'airbnb-typescript-prettier'
+    'airbnb-typescript-prettier',
+    'plugin:testcafe/recommended'
   ],
   env: {
     browser: true,
     jest: true
   },
+  plugins: [
+    'testcafe'
+  ],
   rules: {
     'react/prop-types': 0,
     'react/destructuring-assignment': 0,
