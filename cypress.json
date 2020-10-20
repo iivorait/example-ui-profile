@@ -1,5 +1,6 @@
 {
   "baseUrl": "http://localhost:3000",
   "ignoreTestFiles": ["**/__tests__/*.*","**/__mocks__/*.*"],
-  "trashAssetsBeforeRuns": false
+  "trashAssetsBeforeRuns": false,
+  "chromeWebSecurity": false
 }
