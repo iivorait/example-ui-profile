@@ -23,9 +23,11 @@ const LoginComponent = ({ client }: LoginProps): React.ReactElement => {
     const user = getUser();
     const name = user ? `${user.given_name} ${user.family_name}` : '';
     return (
-      <DemoWrapper title="Keycloak-kuuntelija">
+      <DemoWrapper title="Keycloak-kuuntelija" data-test-id="logged-in-info">
         <div className={styles['content-element']}>
-          <h3>Olet kirjautunut, {name}</h3>
+          <h3>
+            Olet kirjautunut, <span data-test-id="user-name">{name}</span>
+          </h3>
           <div>
             <Button translate="" onClick={logout}>
               Kirjaudu ulos
@@ -40,7 +42,7 @@ const LoginComponent = ({ client }: LoginProps): React.ReactElement => {
       <div className={styles['content-element']}>
         <h3>Et ole kirjautunut</h3>
         <div>
-          <Button translate="" onClick={login}>
+          <Button translate="" onClick={login} data-test-id="login-button">
             Kirjaudu sisään
           </Button>
         </div>

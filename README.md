@@ -65,3 +65,22 @@ services:
     environment: 
       - REACT_APP_OIDC_URL=https://foo.bar 
 ```
+## Tests
+
+### Unit tests with Jest
+```bash
+ yarn test
+```
+
+### Browser tests with Testcafe
+
+Make sure you have local server running at http://localhost:3000 
+```bash
+ yarn start
+```
+
+Then run tests on Chrome
+
+```bash
+ yarn run testcafe chrome testcafe/*test*
+```
