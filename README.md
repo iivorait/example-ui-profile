@@ -50,6 +50,21 @@ Config can also be overridden for command line:
 ```bash
 REACT_APP_OIDC_URL=https://foo.bar yarn start
 ```
+### Config for Tunnistamo
+```yml
+REACT_APP_OIDC_URL="https://api.hel.fi/sso-test/"
+REACT_APP_OIDC_CLIENT_ID="https://api.hel.fi/auth/helsinkiprofile-ui-dev"
+REACT_APP_OIDC_SILENT_AUTH_PATH="/"
+REACT_APP_OIDC_AUTO_SIGN_IN=false
+REACT_APP_OIDC_SCOPE="openid profile email"
+REACT_APP_OIDC_CLIENT_TYPE="oidc"
+REACT_APP_OIDC_REALM=""
+REACT_APP_OIDC_CALLBACK_PATH="/callback"
+```
+Tunnistamo does not support silent login checks (it uses only localstorage) so REACT_APP_OIDC_AUTO_SIGN_IN must be 'false'. It renews access tokens so anyway REACT_APP_OIDC_SILENT_AUTH_PATH must be changed to '/' to prevent errors for unknown redirect url.
+
+REACT_APP_OIDC_CLIENT_TYPE can only be "oidc"
+
 ## Docker
 
 Run `docker-compose up`
