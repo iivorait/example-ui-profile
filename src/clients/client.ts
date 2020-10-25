@@ -94,14 +94,17 @@ export function useClientCallback(clientType?: ClientType): Client {
   const [, setStatus] = useState<ClientStatusId>(clientFromRef.getStatus());
   useEffect(() => {
     const initClient = async (): Promise<void> => {
-      if (!clientFromRef.isInitialized()) {
-        await clientFromRef.handleCallback().catch(e =>
-          clientFromRef.setError({
-            type: ClientError.INIT_ERROR,
-            message: e && e.toString()
-          })
+      if (clientFromRef.isInitialized()) {
+        throw new Error(
+          'Client already initialized. This should not happen with callback. When using callback, client should not be initialized more than once.'
         );
       }
+      await clientFromRef.handleCallback().catch(e =>
+        clientFromRef.setError({
+          type: ClientError.INIT_ERROR,
+          message: e && e.toString()
+        })
+      );
     };
     const statusListenerDisposer = clientFromRef.addListener(
       ClientEvent.STATUS_CHANGE,

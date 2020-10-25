@@ -22,7 +22,9 @@ function envValueToBoolean(
 const clientConfig: ClientProps = {
   realm: String(process.env.REACT_APP_OIDC_REALM),
   url: String(process.env.REACT_APP_OIDC_URL),
-  authority: `${process.env.REACT_APP_OIDC_URL}/realms/${process.env.REACT_APP_OIDC_REALM}`,
+  authority: process.env.REACT_APP_OIDC_REALM
+    ? `${process.env.REACT_APP_OIDC_URL}/realms/${process.env.REACT_APP_OIDC_REALM}`
+    : String(process.env.REACT_APP_OIDC_URL),
   clientId: String(process.env.REACT_APP_OIDC_CLIENT_ID),
   callbackPath: process.env.REACT_APP_OIDC_CALLBACK_PATH || undefined,
   logoutPath: process.env.REACT_APP_OIDC_LOGOUT_PATH || '/',
