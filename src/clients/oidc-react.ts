@@ -18,8 +18,7 @@ import {
   hasValidClientConfig,
   getClientConfig,
   getLocationBasedUri,
-  getTokenUri,
-  FetchApiTokenOptions
+  getTokenUri
 } from './index';
 
 let client: Client | null = null;
@@ -255,9 +254,7 @@ export function createOidcClient(): Client {
     return getStoredUser();
   };
 
-  const getAccessToken: Client['getAccessToken'] = async (
-    options: FetchApiTokenOptions
-  ) => {
+  const getAccessToken: Client['getAccessToken'] = async options => {
     const user = getStoredUser();
     if (!user) {
       throw new Error('getAccessToken: no user with access token');
