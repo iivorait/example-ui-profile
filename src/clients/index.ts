@@ -107,9 +107,9 @@ export interface ClientProps {
   clientId: string;
   /**
    * The redirect URI of your client application to receive a response from the OIDC/OAuth2 provider.
-   * Not needed for keycloak client. Only for oidc-react.
+   * Not needed for keycloak client. Only for oidc-react. Use empty string with keycloak.
    */
-  callbackPath: string | undefined;
+  callbackPath: string;
   /**
    * The redirect URI of your client application after logout
    * Default: '/'

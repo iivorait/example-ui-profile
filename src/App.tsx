@@ -14,8 +14,9 @@ import { setClientConfig } from './clients/index';
 setClientConfig(config.client);
 
 function App(): React.ReactElement {
-  const isCallbackUrl = useRouteMatch('/callback');
-  if (isCallbackUrl) {
+  const { callbackPath } = config.client;
+  const isCallbackUrl = useRouteMatch(callbackPath);
+  if (callbackPath && isCallbackUrl) {
     return (
       <PageContainer>
         <OidcCallback successRedirect="/" failureRedirect="/authError" />

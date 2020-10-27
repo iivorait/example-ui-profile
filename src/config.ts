@@ -26,7 +26,7 @@ const clientConfig: ClientProps = {
     ? `${process.env.REACT_APP_OIDC_URL}/realms/${process.env.REACT_APP_OIDC_REALM}`
     : String(process.env.REACT_APP_OIDC_URL),
   clientId: String(process.env.REACT_APP_OIDC_CLIENT_ID),
-  callbackPath: process.env.REACT_APP_OIDC_CALLBACK_PATH || undefined,
+  callbackPath: String(process.env.REACT_APP_OIDC_CALLBACK_PATH),
   logoutPath: process.env.REACT_APP_OIDC_LOGOUT_PATH || '/',
   silentAuthPath: process.env.REACT_APP_OIDC_SILENT_AUTH_PATH,
   responseType: process.env.REACT_APP_OIDC_RESPONSE_TYPE,
