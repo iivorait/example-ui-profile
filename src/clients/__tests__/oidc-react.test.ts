@@ -190,7 +190,8 @@ describe('Oidc client ', () => {
         undefined
       );
       await to(client.init());
-      // getInitCallCount() actually tracks if signInSilent is called, not client.init()
+      // note: checking getInitCallCount() === 0 right after client.init() may be confusing
+      // getInitCallCount() shows if keycloak/oidc.manager initialisation has been done, not how many times client.init() was called
       expect(mockMutator.getInitCallCount()).toBe(0);
       const user = client.getUserProfile();
       expect(user && user.email).toBe(email);

@@ -155,7 +155,7 @@ export interface ClientProps {
    */
   type: ClientType;
   /**
-   * Path for exchanging tokens. Leave blank to use standard path realms/<realm>/protocol/openid-connect/token
+   * Path for exchanging tokens. Leave blank to use default keycloak path realms/<realm>/protocol/openid-connect/token
    */
   tokenExchangePath?: string;
 }

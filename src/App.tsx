@@ -36,7 +36,7 @@ function App(): React.ReactElement {
               <AccessTokens />
             </Route>
             <Route path={['/authError']} exact>
-              <div>Authentikaatio epäonnistui</div>
+              <div>Autentikaatio epäonnistui</div>
             </Route>
             <Route path="*">404 - not found</Route>
           </Switch>
