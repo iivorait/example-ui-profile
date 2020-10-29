@@ -22,9 +22,11 @@ function envValueToBoolean(
 const clientConfig: ClientProps = {
   realm: String(process.env.REACT_APP_OIDC_REALM),
   url: String(process.env.REACT_APP_OIDC_URL),
-  authority: `${process.env.REACT_APP_OIDC_URL}/realms/${process.env.REACT_APP_OIDC_REALM}`,
+  authority: process.env.REACT_APP_OIDC_REALM
+    ? `${process.env.REACT_APP_OIDC_URL}/realms/${process.env.REACT_APP_OIDC_REALM}`
+    : String(process.env.REACT_APP_OIDC_URL),
   clientId: String(process.env.REACT_APP_OIDC_CLIENT_ID),
-  callbackPath: process.env.REACT_APP_OIDC_CALLBACK_PATH || undefined,
+  callbackPath: String(process.env.REACT_APP_OIDC_CALLBACK_PATH),
   logoutPath: process.env.REACT_APP_OIDC_LOGOUT_PATH || '/',
   silentAuthPath: process.env.REACT_APP_OIDC_SILENT_AUTH_PATH,
   responseType: process.env.REACT_APP_OIDC_RESPONSE_TYPE,
@@ -37,7 +39,8 @@ const clientConfig: ClientProps = {
   enableLogging: envValueToBoolean(process.env.REACT_APP_OIDC_LOGGING, false),
   loginType: process.env.REACT_APP_OIDC_LOGIN_TYPE as ClientProps['loginType'],
   flow: process.env.REACT_APP_OIDC_FLOW as ClientProps['flow'],
-  type: process.env.REACT_APP_OIDC_CLIENT_TYPE as ClientProps['type']
+  type: process.env.REACT_APP_OIDC_CLIENT_TYPE as ClientProps['type'],
+  tokenExchangePath: process.env.REACT_APP_OIDC_TOKEN_EXCHANGE_PATH
 };
 
 export default {

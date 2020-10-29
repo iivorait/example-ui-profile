@@ -107,9 +107,9 @@ export interface ClientProps {
   clientId: string;
   /**
    * The redirect URI of your client application to receive a response from the OIDC/OAuth2 provider.
-   * Not needed for keycloak client. Only for oidc-react.
+   * Not needed for keycloak client. Only for oidc-react. Use empty string with keycloak.
    */
-  callbackPath: string | undefined;
+  callbackPath: string;
   /**
    * The redirect URI of your client application after logout
    * Default: '/'
@@ -154,6 +154,10 @@ export interface ClientProps {
    * Type of the client
    */
   type: ClientType;
+  /**
+   * Path for exchanging tokens. Leave blank to use default keycloak path realms/<realm>/protocol/openid-connect/token
+   */
+  tokenExchangePath?: string;
 }
 
 type EventHandlers = {
@@ -261,9 +265,7 @@ export function createClient(): ClientFactory {
     return true;
   };
 
-  const fetchApiToken: ClientFactory['fetchApiToken'] = async (
-    options: FetchApiTokenConfiguration
-  ) => {
+  const fetchApiToken: ClientFactory['fetchApiToken'] = async options => {
     const myHeaders = new Headers();
     myHeaders.append('Authorization', `Bearer ${options.accessToken}`);
     myHeaders.append('Content-Type', 'application/x-www-form-urlencoded');
@@ -346,5 +348,8 @@ export function getLocationBasedUri(
 }
 
 export function getTokenUri(clientProps: ClientProps): string {
+  if (clientProps.tokenExchangePath) {
+    return `${clientProps.url}${clientProps.tokenExchangePath}`;
+  }
   return `${clientProps.url}/realms/${clientProps.realm}/protocol/openid-connect/token`;
 }

@@ -10,9 +10,16 @@ import {
   configureClient,
   createEventListeners
 } from '../__mocks__';
-import { ClientStatus, Client, ClientEvent, ClientError } from '../index';
+import {
+  ClientStatus,
+  Client,
+  ClientEvent,
+  ClientError,
+  setClientConfig
+} from '../index';
 import { createOidcClient } from '../oidc-react';
 import { mockMutatorGetterOidc } from '../__mocks__/oidc-react-mock';
+import config from '../../config';
 
 type UserManagerEvent = {
   raise: (payload?: any) => void;
@@ -165,6 +172,29 @@ describe('Oidc client ', () => {
       if (error) {
         expect(error.type).toBe(ClientError.AUTH_ERROR);
       }
+    });
+  });
+  describe('setting autoSignIn=false ', () => {
+    beforeEach(() => {
+      setClientConfig({ ...config.client, autoSignIn: false });
+      initTests();
+    });
+    afterEach(() => {
+      clearTests();
+    });
+
+    it('changes init() and it does not call signinSilent, just getUser  ', async () => {
+      const email = 'autoSignIn@test.com';
+      mockMutator.setLoadProfilePayload(
+        mockMutator.createValidUserData({ email }),
+        undefined
+      );
+      await to(client.init());
+      // note: checking getInitCallCount() === 0 right after client.init() may be confusing
+      // getInitCallCount() shows if keycloak/oidc.manager initialisation has been done, not how many times client.init() was called
+      expect(mockMutator.getInitCallCount()).toBe(0);
+      const user = client.getUserProfile();
+      expect(user && user.email).toBe(email);
     });
   });
 });

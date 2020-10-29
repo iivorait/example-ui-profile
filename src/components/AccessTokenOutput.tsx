@@ -5,7 +5,7 @@ const AccessTokenOutput = (props: {
   accessToken?: Record<string, string>;
 }): React.ReactElement | null => {
   const { accessToken } = props;
-  if (!accessToken || (!accessToken.access_token && !accessToken.error)) {
+  if (!accessToken) {
     return null;
   }
   return (

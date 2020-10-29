@@ -1,5 +1,5 @@
 import React from 'react';
-import { Switch, Route } from 'react-router';
+import { Switch, Route, useRouteMatch } from 'react-router';
 
 import Index from './pages/Index';
 import AccessTokens from './pages/AccessTokens';
@@ -14,6 +14,15 @@ import { setClientConfig } from './clients/index';
 setClientConfig(config.client);
 
 function App(): React.ReactElement {
+  const { callbackPath } = config.client;
+  const isCallbackUrl = useRouteMatch(callbackPath);
+  if (callbackPath && isCallbackUrl) {
+    return (
+      <PageContainer>
+        <OidcCallback successRedirect="/" failureRedirect="/authError" />
+      </PageContainer>
+    );
+  }
   return (
     <ClientProvider>
       <StoreProvider>
@@ -26,9 +35,8 @@ function App(): React.ReactElement {
             <Route path={['/accessTokens']} exact>
               <AccessTokens />
             </Route>
-            <Route path={['/callback']} exact>
-              <div>CallBack</div>
-              <OidcCallback successRedirect="/" failureRedirect="/" />
+            <Route path={['/authError']} exact>
+              <div>Autentikaatio epäonnistui</div>
             </Route>
             <Route path="*">404 - not found</Route>
           </Switch>

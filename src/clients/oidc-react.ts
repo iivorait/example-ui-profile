@@ -18,8 +18,7 @@ import {
   hasValidClientConfig,
   getClientConfig,
   getLocationBasedUri,
-  getTokenUri,
-  FetchApiTokenOptions
+  getTokenUri
 } from './index';
 
 let client: Client | null = null;
@@ -110,7 +109,11 @@ export function createOidcClient(): Client {
     if (isAuthenticated()) {
       const user = (getStoredUser() as unknown) as User;
       const userData = user && user.profile;
-      if (userData && userData.name && userData.session_state) {
+      if (
+        userData &&
+        userData.name &&
+        (userData.session_state || userData.amr)
+      ) {
         return userData;
       }
     }
@@ -135,13 +138,15 @@ export function createOidcClient(): Client {
     if (initPromise) {
       return initPromise;
     }
+    const initializer = clientConfig.autoSignIn
+      ? manager.signinSilent
+      : manager.getUser;
     setStatus(ClientStatus.INITIALIZING);
     initPromise = new Promise((resolve, reject) => {
-      manager
-        .signinSilent()
-        .then((loadedUser: User) => {
-          const authenticated = !!loadedUser;
-          if (authenticated) {
+      initializer
+        .call(manager)
+        .then((loadedUser: User | null) => {
+          if (loadedUser) {
             const oidcUserAsClientUser = oidcUserToClientUser(loadedUser);
             setStoredUser(oidcUserAsClientUser);
             onAuthChange(true);
@@ -249,9 +254,7 @@ export function createOidcClient(): Client {
     return getStoredUser();
   };
 
-  const getAccessToken: Client['getAccessToken'] = async (
-    options: FetchApiTokenOptions
-  ) => {
+  const getAccessToken: Client['getAccessToken'] = async options => {
     const user = getStoredUser();
     if (!user) {
       throw new Error('getAccessToken: no user with access token');

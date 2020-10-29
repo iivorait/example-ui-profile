@@ -11,9 +11,9 @@ const AccessTokens = (): React.ReactElement => {
   const clientContext = useContext(ClientContext);
   const client: Client | null = clientContext && clientContext.client;
   const [accessToken, setAccesstoken]: [
-    Record<string, string>,
+    Record<string, string> | undefined,
     Function
-  ] = useState({});
+  ] = useState(undefined);
   const [loading, setLoading] = useState(false);
   const [options, setOptions]: [FetchApiTokenOptions, Function] = useState({
     audience: process.env.REACT_APP_API_BACKEND_AUDIENCE || '',
@@ -51,6 +51,9 @@ const AccessTokens = (): React.ReactElement => {
   return (
     <PageContent>
       <h1>Access tokenin haku</h1>
+      <p>
+        Jos käytössä on Tunnistamon endPoint, ei asetuksilla ole merkitystä.
+      </p>
       <AccessTokenForm options={options} onOptionChange={onOptionChange} />
       <Button translate="" onClick={onSubmit} disabled={loading}>
         Hae
