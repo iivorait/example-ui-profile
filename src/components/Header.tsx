@@ -42,7 +42,7 @@ const Header = (): React.ReactElement => {
         <Navigation.Item
           active={active === 'accessTokens'}
           as="button"
-          label="Hae access token"
+          label="Hae API access token"
           type="button"
           onClick={(): void => {
             setActive('accessTokens');

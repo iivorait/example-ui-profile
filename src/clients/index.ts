@@ -6,7 +6,7 @@ import to from 'await-handler';
 export type User = Record<string, string | number | boolean>;
 export type Token = string | undefined;
 export type ClientType = 'keycloak' | 'oidc';
-export type JWTPayload = string | Buffer | Record<string, {}>;
+export type JWTPayload = Record<string, string>;
 export type EventPayload =
   | User
   | undefined
@@ -35,6 +35,9 @@ export type Client = {
   getAccessToken: (
     options: FetchApiTokenOptions
   ) => Promise<JWTPayload | FetchError>;
+  getApiTokens: () => JWTPayload;
+  addApiTokens: (newToken: JWTPayload) => JWTPayload;
+  removeApiToken: (name: string) => JWTPayload;
 };
 
 export const ClientStatus = {
@@ -179,6 +182,9 @@ export type ClientFactory = {
   fetchApiToken: (
     options: FetchApiTokenConfiguration
   ) => Promise<JWTPayload | FetchError>;
+  getApiTokens: Client['getApiTokens'];
+  addApiTokens: Client['addApiTokens'];
+  removeApiToken: Client['removeApiToken'];
 } & EventHandlers;
 
 export function createEventHandling(): EventHandlers {
@@ -221,6 +227,7 @@ export function createClient(): ClientFactory {
   let status: ClientStatusId = ClientStatus.NONE;
   let error: ClientError;
   let user: User | undefined;
+  const tokenStorage: JWTPayload = {};
   const { addListener, eventTrigger } = createEventHandling();
 
   const getStoredUser = (): User | undefined => {
@@ -265,6 +272,16 @@ export function createClient(): ClientFactory {
     return true;
   };
 
+  const getApiTokens: ClientFactory['getApiTokens'] = () => tokenStorage;
+  const addApiTokens: ClientFactory['addApiTokens'] = newToken => {
+    Object.assign(tokenStorage, newToken);
+    return tokenStorage;
+  };
+  const removeApiToken: ClientFactory['removeApiToken'] = name => {
+    delete tokenStorage[name];
+    return tokenStorage;
+  };
+
   const fetchApiToken: ClientFactory['fetchApiToken'] = async options => {
     const myHeaders = new Headers();
     myHeaders.append('Authorization', `Bearer ${options.accessToken}`);
@@ -304,7 +321,9 @@ export function createClient(): ClientFactory {
         message: 'Returned data is not valid json'
       } as FetchError;
     }
-    return json as JWTPayload;
+    const jwt = json as JWTPayload;
+    addApiTokens(jwt);
+    return jwt;
   };
 
   return {
@@ -318,7 +337,10 @@ export function createClient(): ClientFactory {
     setError,
     isInitialized,
     isAuthenticated,
-    fetchApiToken
+    fetchApiToken,
+    getApiTokens,
+    addApiTokens,
+    removeApiToken
   };
 }
 

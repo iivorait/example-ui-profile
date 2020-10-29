@@ -5,6 +5,7 @@ import { ClientContext } from '../clients/ClientProvider';
 import PageContent from '../components/PageContent';
 import AccessTokenForm from '../components/AccessTokenForm';
 import AccessTokenOutput from '../components/AccessTokenOutput';
+import Profile from '../components/Profile';
 import { Client, FetchApiTokenOptions } from '../clients';
 
 const AccessTokens = (): React.ReactElement => {
@@ -50,7 +51,7 @@ const AccessTokens = (): React.ReactElement => {
   }
   return (
     <PageContent>
-      <h1>Access tokenin haku</h1>
+      <h1>API Access tokenin haku</h1>
       <p>
         Jos käytössä on Tunnistamon endPoint, ei asetuksilla ole merkitystä.
       </p>
@@ -64,6 +65,7 @@ const AccessTokens = (): React.ReactElement => {
         </div>
       )}
       <AccessTokenOutput accessToken={accessToken} />
+      <Profile />
     </PageContent>
   );
 };
