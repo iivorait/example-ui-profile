@@ -1,5 +1,4 @@
 import React, { useContext } from 'react';
-
 import { ClientContext } from '../clients/ClientProvider';
 import LoginComponent from '../components/Login';
 import PageContent from '../components/PageContent';
@@ -29,7 +28,7 @@ const IndexPage = (): React.ReactElement => {
             Clientiksi on .env-filessä määritelty:
             <strong>{clientConfig.type}</strong>
           </p>
-          <LoginComponent client={clientContext.client} />
+          <LoginComponent />
           <ReduxConsumer />
           <WithAuthDemo />
           <KeycloakConsumer />

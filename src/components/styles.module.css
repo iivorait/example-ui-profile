@@ -98,3 +98,18 @@
 .access-token-output pre{
   font-size:11px;
 }
+
+.user-token-list{
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.user-token-list li{
+  padding:5px 0;
+}
+
+.token{
+  overflow: hidden;
+  word-break: break-all;
+}

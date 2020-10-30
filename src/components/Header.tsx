@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { Navigation } from 'hds-react';
 import { useHistory, useLocation } from 'react-router-dom';
-
 import { useClient } from '../clients/client';
+
+type Page = 'frontpage' | 'apiAccessTokens' | 'userTokens';
 
 const Header = (): React.ReactElement => {
   const client = useClient();
@@ -11,9 +12,11 @@ const Header = (): React.ReactElement => {
   const user = client.getUser();
   const history = useHistory();
   const location = useLocation();
-  const [active, setActive] = useState<'frontpage' | 'accessTokens'>(
-    location.pathname !== '/accessTokens' ? 'frontpage' : 'accessTokens'
-  );
+  const currentPageFromPath: Page =
+    location.pathname && location.pathname.length > 1
+      ? (location.pathname.substr(1) as Page)
+      : 'frontpage';
+  const [active, setActive] = useState<Page>(currentPageFromPath);
 
   const title = 'Helsinki Profiili Example';
   const userName = user ? `${user.given_name} ${user.family_name}` : '';
@@ -40,13 +43,23 @@ const Header = (): React.ReactElement => {
           }}
         />
         <Navigation.Item
-          active={active === 'accessTokens'}
+          active={active === 'apiAccessTokens'}
           as="button"
           label="Hae API access token"
           type="button"
           onClick={(): void => {
-            setActive('accessTokens');
-            history.push('/accessTokens');
+            setActive('apiAccessTokens');
+            history.push('/apiAccessTokens');
+          }}
+        />
+        <Navigation.Item
+          active={active === 'userTokens'}
+          as="button"
+          label="Tokenit"
+          type="button"
+          onClick={(): void => {
+            setActive('userTokens');
+            history.push('/userTokens');
           }}
         />
       </Navigation.Row>

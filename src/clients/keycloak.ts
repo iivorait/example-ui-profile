@@ -299,7 +299,7 @@ export function createKeycloakClient(): Client {
     });
   };
 
-  const getAccessToken: Client['getAccessToken'] = async (
+  const getApiAccessToken: Client['getApiAccessToken'] = async (
     options: FetchApiTokenOptions
   ) => {
     const tokenResponse = await fetchApiToken({
@@ -308,6 +308,17 @@ export function createKeycloakClient(): Client {
       ...options
     });
     return tokenResponse;
+  };
+
+  const getUserTokens: Client['getUserTokens'] = () => {
+    if (!isAuthenticated()) {
+      return undefined;
+    }
+    return {
+      accessToken: keycloak.token,
+      idToken: keycloak.idToken,
+      refreshToken: keycloak.refreshToken
+    };
   };
 
   client = {
@@ -321,7 +332,8 @@ export function createKeycloakClient(): Client {
     handleCallback,
     getOrLoadUser,
     onAuthChange,
-    getAccessToken,
+    getApiAccessToken,
+    getUserTokens,
     ...clientFunctions
   };
   bindEvents(keycloak, { onAuthChange, eventTrigger, setError, clearSession });

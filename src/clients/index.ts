@@ -32,12 +32,13 @@ export type Client = {
   getUserProfile: () => User | undefined;
   addListener: (eventType: ClientEventId, listener: EventListener) => Function;
   onAuthChange: (authenticated: boolean) => boolean;
-  getAccessToken: (
+  getApiAccessToken: (
     options: FetchApiTokenOptions
   ) => Promise<JWTPayload | FetchError>;
   getApiTokens: () => JWTPayload;
   addApiTokens: (newToken: JWTPayload) => JWTPayload;
   removeApiToken: (name: string) => JWTPayload;
+  getUserTokens: () => Record<string, string | undefined> | undefined;
 };
 
 export const ClientStatus = {

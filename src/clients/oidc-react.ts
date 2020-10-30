@@ -99,7 +99,6 @@ export function createOidcClient(): Client {
     getStatus,
     setError
   } = clientFunctions;
-
   if (clientConfig.enableLogging) {
     Oidc.Log.logger = console;
     Oidc.Log.level = Oidc.Log.INFO;
@@ -146,7 +145,7 @@ export function createOidcClient(): Client {
       initializer
         .call(manager)
         .then((loadedUser: User | null) => {
-          if (loadedUser) {
+          if (loadedUser && !loadedUser.expired) {
             const oidcUserAsClientUser = oidcUserToClientUser(loadedUser);
             setStoredUser(oidcUserAsClientUser);
             onAuthChange(true);
@@ -254,10 +253,10 @@ export function createOidcClient(): Client {
     return getStoredUser();
   };
 
-  const getAccessToken: Client['getAccessToken'] = async options => {
+  const getApiAccessToken: Client['getApiAccessToken'] = async options => {
     const user = getStoredUser();
     if (!user) {
-      throw new Error('getAccessToken: no user with access token');
+      throw new Error('getApiAccessToken: no user with access token');
     }
     const tokenResponse = await fetchApiToken({
       uri: getTokenUri(getClientConfig()),
@@ -265,6 +264,18 @@ export function createOidcClient(): Client {
       ...options
     });
     return tokenResponse;
+  };
+
+  const getUserTokens: Client['getUserTokens'] = () => {
+    if (!isAuthenticated()) {
+      return undefined;
+    }
+    const user = getStoredUser() as Record<string, string | undefined>;
+    return {
+      accessToken: user.access_token,
+      idToken: user.id_token,
+      refreshToken: user.refresh_token
+    };
   };
 
   client = {
@@ -278,7 +289,8 @@ export function createOidcClient(): Client {
     handleCallback,
     getOrLoadUser,
     onAuthChange,
-    getAccessToken,
+    getApiAccessToken,
+    getUserTokens,
     ...clientFunctions
   };
   bindEvents(manager, { onAuthChange, eventTrigger, setError });

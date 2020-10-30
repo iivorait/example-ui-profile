@@ -11,7 +11,9 @@ const AccessTokenOutput = (props: {
   return (
     <div className={styles['access-token-output']}>
       <h2>Haettu token:</h2>
-      <pre>{JSON.stringify(accessToken, null, 2)}</pre>
+      <span className={styles.token}>
+        {JSON.stringify(accessToken, null, 2)}
+      </span>
     </div>
   );
 };

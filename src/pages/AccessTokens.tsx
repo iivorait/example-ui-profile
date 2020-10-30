@@ -1,14 +1,15 @@
 import React, { useContext, useState } from 'react';
 import { Button } from 'hds-react';
-
 import { ClientContext } from '../clients/ClientProvider';
 import PageContent from '../components/PageContent';
 import AccessTokenForm from '../components/AccessTokenForm';
 import AccessTokenOutput from '../components/AccessTokenOutput';
-import Profile from '../components/Profile';
 import { Client, FetchApiTokenOptions } from '../clients';
+import LoginInfo from '../components/LoginInfo';
+import AuthenticatingInfo from '../components/AuthenticatingInfo';
+import WithAuth from '../clients/WithAuth';
 
-const AccessTokens = (): React.ReactElement => {
+const AuthenticatedContent = (): React.ReactElement => {
   const clientContext = useContext(ClientContext);
   const client: Client | null = clientContext && clientContext.client;
   const [accessToken, setAccesstoken]: [
@@ -26,29 +27,13 @@ const AccessTokens = (): React.ReactElement => {
       return;
     }
     setLoading(true);
-    const result = await client.getAccessToken(options);
+    const result = await client.getApiAccessToken(options);
     setAccesstoken(result);
     setLoading(false);
   };
   const onOptionChange = (newOptions: FetchApiTokenOptions): void => {
     setOptions(newOptions);
   };
-  if (!client || !client.isInitialized()) {
-    return (
-      <PageContent>
-        <div>Haetaan kirjautumistietoja...</div>
-      </PageContent>
-    );
-  }
-  if (!client.isAuthenticated()) {
-    return (
-      <PageContent>
-        <Button translate="" onClick={client.login}>
-          Kirjaudu sisään
-        </Button>
-      </PageContent>
-    );
-  }
   return (
     <PageContent>
       <h1>API Access tokenin haku</h1>
@@ -65,8 +50,23 @@ const AccessTokens = (): React.ReactElement => {
         </div>
       )}
       <AccessTokenOutput accessToken={accessToken} />
-      <Profile />
     </PageContent>
+  );
+};
+
+const UnauthenticatedContent = (): React.ReactElement => {
+  return (
+    <PageContent>
+      <LoginInfo />
+    </PageContent>
+  );
+};
+
+const AccessTokens = (): React.ReactElement => {
+  return WithAuth(
+    AuthenticatedContent,
+    UnauthenticatedContent,
+    AuthenticatingInfo
   );
 };
 
