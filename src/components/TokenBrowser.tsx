@@ -39,7 +39,7 @@ const TokenBrowser = (): React.ReactElement => {
   }): React.ReactElement => {
     const { title, id, token } = props;
     return (
-      <li>
+      <div>
         <label htmlFor={id}>
           <input
             type="radio"
@@ -50,7 +50,7 @@ const TokenBrowser = (): React.ReactElement => {
           />{' '}
           {title}
         </label>
-      </li>
+      </div>
     );
   };
 
