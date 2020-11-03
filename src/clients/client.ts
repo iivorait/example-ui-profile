@@ -1,5 +1,5 @@
 /* eslint-disable react-hooks/rules-of-hooks */
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useCallback, createContext } from 'react';
 import {
   Client,
   ClientError,
@@ -7,7 +7,10 @@ import {
   ClientStatus,
   ClientStatusId,
   ClientType,
-  getClientConfig
+  FetchApiTokenOptions,
+  FetchError,
+  getClientConfig,
+  JWTPayload
 } from '.';
 import { getClient as getKeycloakClient } from './keycloak';
 import { getClient as getOidcClient } from './oidc-react';
@@ -119,4 +122,81 @@ export function useClientCallback(clientType?: ClientType): Client {
     };
   }, [clientFromRef]);
   return clientFromRef;
+}
+
+export type FetchStatus =
+  | 'unauthorized'
+  | 'ready'
+  | 'loading'
+  | 'error'
+  | 'loaded'
+  | 'waiting';
+export type ApiAccessTokenActions = {
+  fetch: (options: FetchApiTokenOptions) => Promise<JWTPayload | FetchError>;
+  getStatus: () => FetchStatus;
+  getTokens: () => JWTPayload | undefined;
+};
+
+export const ApiAccessTokenActionsContext = createContext<ApiAccessTokenActions | null>(
+  null
+);
+
+export function useApiAccessTokens(): ApiAccessTokenActions {
+  const client = useClient();
+  const tokens = client.isAuthenticated() ? client.getApiTokens() : undefined;
+  const hasTokens = tokens && Object.keys(tokens).length;
+  const [apiTokens, setApiTokens] = useState<JWTPayload | undefined>(
+    hasTokens ? tokens : undefined
+  );
+
+  const resolveStatus = (): FetchStatus => {
+    if (!client.isAuthenticated()) {
+      return 'unauthorized';
+    }
+    if (apiTokens) {
+      return 'loaded';
+    }
+    return 'ready';
+  };
+
+  const [status, setStatus] = useState<FetchStatus>(resolveStatus());
+
+  const currentStatus = status === 'unauthorized' ? resolveStatus() : status;
+
+  const fetchTokens: ApiAccessTokenActions['fetch'] = useCallback(
+    async options => {
+      setStatus('loading');
+      const result = await client.getApiAccessToken(options);
+      if (result.error) {
+        setStatus('error');
+      } else {
+        setApiTokens(result as JWTPayload);
+        setStatus('loaded');
+      }
+      return result;
+    },
+    [client]
+  );
+
+  useEffect(() => {
+    const autoFetch = async (): Promise<void> => {
+      if (currentStatus !== 'ready') {
+        return;
+      }
+      setStatus('loading');
+      fetchTokens({
+        audience: String(process.env.REACT_APP_API_BACKEND_AUDIENCE),
+        permission: String(process.env.REACT_APP_API_BACKEND_PERMISSION),
+        grantType: String(process.env.REACT_APP_API_BACKEND_GRANT_TYPE)
+      });
+    };
+
+    autoFetch();
+  }, [fetchTokens, currentStatus, status]);
+
+  return {
+    getStatus: () => status,
+    fetch: options => fetchTokens(options),
+    getTokens: () => apiTokens
+  } as ApiAccessTokenActions;
 }

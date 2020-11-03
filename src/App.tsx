@@ -2,8 +2,9 @@ import React from 'react';
 import { Switch, Route, useRouteMatch } from 'react-router';
 
 import Index from './pages/Index';
-import AccessTokens from './pages/AccessTokens';
+import ApiAccessTokens from './pages/ApiAccessTokens';
 import Tokens from './pages/Tokens';
+import ProfilePage from './pages/ProfilePage';
 import { ClientProvider } from './clients/ClientProvider';
 import OidcCallback from './clients/OidcCallback';
 import StoreProvider from './clients/redux/StoreProvider';
@@ -34,10 +35,13 @@ function App(): React.ReactElement {
               <Index />
             </Route>
             <Route path={['/apiAccessTokens']} exact>
-              <AccessTokens />
+              <ApiAccessTokens />
             </Route>
             <Route path={['/userTokens']} exact>
               <Tokens />
+            </Route>
+            <Route path={['/profile']} exact>
+              <ProfilePage />
             </Route>
             <Route path={['/authError']} exact>
               <div>Autentikaatio epäonnistui</div>

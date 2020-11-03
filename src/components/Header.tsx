@@ -3,7 +3,7 @@ import { Navigation } from 'hds-react';
 import { useHistory, useLocation } from 'react-router-dom';
 import { useClient } from '../clients/client';
 
-type Page = 'frontpage' | 'apiAccessTokens' | 'userTokens';
+type Page = 'frontpage' | 'apiAccessTokens' | 'userTokens' | 'profile';
 
 const Header = (): React.ReactElement => {
   const client = useClient();
@@ -60,6 +60,16 @@ const Header = (): React.ReactElement => {
           onClick={(): void => {
             setActive('userTokens');
             history.push('/userTokens');
+          }}
+        />
+        <Navigation.Item
+          active={active === 'profile'}
+          as="button"
+          label="Profiili"
+          type="button"
+          onClick={(): void => {
+            setActive('profile');
+            history.push('/profile');
           }}
         />
       </Navigation.Row>

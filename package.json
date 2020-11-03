@@ -4,6 +4,7 @@
   "license": "MIT",
   "private": true,
   "dependencies": {
+    "@apollo/client": "^3.2.5",
     "@sentry/browser": "^5.15.4",
     "@types/classnames": "^2.2.9",
     "@types/enzyme": "^3.10.5",
@@ -19,6 +20,8 @@
     "enzyme": "^3.11.0",
     "enzyme-adapter-react-16": "^1.15.2",
     "eslint-config-airbnb-typescript-prettier": "^3.1.0",
+    "graphql": "^15.4.0",
+    "graphql.macro": "^1.4.2",
     "hds-core": "0.13.2",
     "hds-design-tokens": "0.13.2",
     "hds-react": "0.13.2",
