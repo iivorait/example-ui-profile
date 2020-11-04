@@ -19,7 +19,7 @@ export function createGraphQLClient(uri: string, token: string): GraphQLClient {
   });
 }
 
-export function resetClient(graphQLClient: GraphQLClient): void {
+export async function resetClient(graphQLClient: GraphQLClient): Promise<void> {
   graphQLClient.stop();
-  graphQLClient.resetStore();
+  await graphQLClient.resetStore();
 }

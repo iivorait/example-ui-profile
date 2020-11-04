@@ -29,7 +29,7 @@ export type ProfileActions = {
   getProfile: () => ProfileData | GraphQLClientError;
   fetch: () => Promise<ProfileData | GraphQLClientError>;
   getStatus: () => FetchStatus;
-  clear: () => void;
+  clear: () => Promise<void>;
 };
 
 export function getProfileApiToken(): string | undefined {
@@ -62,6 +62,7 @@ export function convertQueryToData(
     return undefined;
   }
   const { id, firstName, lastName, nickname, language } = profile;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const getEmail = (data: any): string | undefined => {
     const list = data?.emails?.edges;
     return list && list[0] && list[0].node?.email;
@@ -164,10 +165,10 @@ export function useProfile(): ProfileActions {
     getStatus: () => status,
     getProfile: () => profileData,
     fetch: () => fetchProfile(),
-    clear: () => {
+    clear: async () => {
       const client = getProfileGqlClient();
       if (client) {
-        resetClient(client);
+        await resetClient(client);
       }
       if (profileData) {
         setProfileData(undefined);
