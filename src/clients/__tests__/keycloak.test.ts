@@ -105,15 +105,25 @@ describe('Keycloak client ', () => {
     afterEach(() => {
       clearTests();
     });
-    it('stored after login and user is found in local storage and getUserProfile()', async () => {
+    it('stored after login and user is found in local storage and getUserProfile() and getUserTokens', async () => {
       const email = 'authorized@bar.com';
+      const keycloakTokens = {
+        token: 'accessToken',
+        idToken: 'idToken',
+        refreshToken: 'refreshToken'
+      };
       mockMutator.setUser(mockMutator.createValidUserData({ email }));
       await to(client.init());
+      mockMutator.setTokens(keycloakTokens);
       const token = mockMutator.getTokenParsed();
       const storageUser = getUserFromLocalStorage(token);
       expect(storageUser && storageUser.email).toBe(email);
       const user = client.getUserProfile();
       expect(user && user.email).toBe(email);
+      const tokens = client.getUserTokens();
+      expect(tokens && tokens.accessToken).toBe(keycloakTokens.token);
+      expect(tokens && tokens.idToken).toBe(keycloakTokens.idToken);
+      expect(tokens && tokens.refreshToken).toBe(keycloakTokens.refreshToken);
     });
     it('cleared when auth status is changed to false', async () => {
       const email = 'authorized@bar.com';
