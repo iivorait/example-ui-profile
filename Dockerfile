@@ -66,7 +66,7 @@ RUN yarn build
 FROM nginx:1.17 as production
 # =============================
 
-USER root
+#USER root
 
 #RUN chgrp -R 0 /usr/share/nginx/html && \
 #    chmod -R g=u /usr/share/nginx/html
