@@ -66,8 +66,8 @@ RUN yarn build
 FROM nginx:1.17 as production
 # =============================
 
-# Copy static build
-COPY --from=staticbuilder /app/build /usr/share/nginx/html
+# Nginx runs with user "nginx" by default
+COPY --from=staticbuilder --chown=nginx:nginx /app/build /usr/share/nginx/html
 
 # Copy nginx config
 COPY .prod/nginx.conf /etc/nginx/conf.d/default.conf
