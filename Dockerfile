@@ -82,7 +82,7 @@ COPY --from=staticbuilder /app/build /usr/share/nginx/html
 COPY .prod/nginx.conf /etc/nginx/conf.d/default.conf
 
 #for running as non-root
-RUN echo "pid        /tmp/nginx.pid;" >> /etc/nginx/nginx.conf
+RUN sed -i 's/\/var\/run\/nginx.pid/\/tmp\/nginx.pid/g' /etc/nginx/nginx.conf
 
 CMD ["/bin/bash", "-c", "nginx -g \"daemon off;\""]
 
