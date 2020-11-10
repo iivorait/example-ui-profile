@@ -81,6 +81,9 @@ COPY --from=staticbuilder /app/build /usr/share/nginx/html
 # Copy nginx config
 COPY .prod/nginx.conf /etc/nginx/conf.d/default.conf
 
+#for running as non-root
+RUN echo "pid        /tmp/nginx.pid;" >> /etc/nginx/nginx.conf
+
 CMD ["/bin/bash", "-c", "nginx -g \"daemon off;\""]
 
 EXPOSE 8080
