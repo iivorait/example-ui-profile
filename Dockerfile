@@ -68,8 +68,8 @@ FROM nginx:1.17 as production
 
 USER root
 
-RUN chgrp -R 0 /usr/share/nginx/html && \
-    chmod -R g=u /usr/share/nginx/html
+#RUN chgrp -R 0 /usr/share/nginx/html && \
+#    chmod -R g=u /usr/share/nginx/html
     
 #RUN chgrp -R 0 /var/cache/nginx && \
 #    chmod -R g=u /var/cache/nginx
