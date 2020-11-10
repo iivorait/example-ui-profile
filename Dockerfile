@@ -75,7 +75,7 @@ RUN chgrp -R 0 /usr/share/nginx/html && \
 COPY --from=staticbuilder /app/build /usr/share/nginx/html
 
 # Copy nginx config
-COPY .prod/nginx.conf  /etc/nginx/
+COPY .prod/nginx.conf /etc/nginx/conf.d/default.conf
 
 CMD ["/bin/bash", "-c", "nginx -g \"daemon off;\""]
 
