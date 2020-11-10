@@ -66,15 +66,6 @@ RUN yarn build
 FROM nginx:1.17 as production
 # =============================
 
-#USER root
-
-#RUN chgrp -R 0 /usr/share/nginx/html && \
-#    chmod -R g=u /usr/share/nginx/html
-    
-#RUN chgrp -R 0 /var/cache/nginx && \
-#    chmod -R g=u /var/cache/nginx
-#RUN chmod 777 /var/cache/nginx
-
 # Copy static build
 COPY --from=staticbuilder /app/build /usr/share/nginx/html
 
@@ -83,7 +74,5 @@ COPY .prod/nginx.conf /etc/nginx/conf.d/default.conf
 
 #for running as non-root
 RUN sed -i 's/\/var\/run\/nginx.pid/\/tmp\/nginx.pid/g' /etc/nginx/nginx.conf
-
-#CMD ["/bin/bash", "-c", "nginx -g \"daemon off;\""]
 
 EXPOSE 8080
