@@ -71,9 +71,9 @@ USER root
 RUN chgrp -R 0 /usr/share/nginx/html && \
     chmod -R g=u /usr/share/nginx/html
     
-RUN chgrp -R 0 /var/cache/nginx && \
-    chmod -R g=u /var/cache/nginx
-RUN chmod 777 /var/cache/nginx
+#RUN chgrp -R 0 /var/cache/nginx && \
+#    chmod -R g=u /var/cache/nginx
+#RUN chmod 777 /var/cache/nginx
 
 # Copy static build
 COPY --from=staticbuilder /app/build /usr/share/nginx/html
